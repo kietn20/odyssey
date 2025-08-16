@@ -1,3 +1,52 @@
 simulators/drone/venv/
 .cursor-rules
 
+# --- General ---
+# IDE and editor configuration files
+.idea/
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# --- Environment Variables ---
+# Never commit secrets, API keys, or environment-specific configuration!
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- Python (for simulators/) ---
+# Virtual environment directory
+simulators/drone/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# --- Go (for services/) ---
+# Compiled executables. We will add a line for each service.
+/services/telemetry-service/telemetry-service
+
+# --- Node.js (for our future web-dashboard) ---
+# Dependencies
+node_modules/
+
+# Build output folder for React
+/services/web-dashboard/build/
+
+# Log files
+npm-debug.log*
+yarn-error.log*
+yarn.lock.local # local lockfile resolutions
+
+# --- Testing ---
+# Coverage reports
+coverage/
