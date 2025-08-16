@@ -34,8 +34,6 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-
-
 // Hub manages the set of active WebSocket clients.
 type Hub struct {
 	clients map[*websocket.Conn]bool
@@ -49,16 +47,17 @@ type Hub struct {
 
 // NewHub creates a new Hub instance.
 func NewHub() *Hub {
-	return &Hub {
+	return &Hub{
 		clients: make(map[*websocket.Conn]bool),
 	}
 }
 
+// Global instance of our hub.
 var hub = NewHub()
 
 func (h *Hub) addClient(conn *websocket.Conn) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	h.mu.Lock()         // Acquire a write lock
+	defer h.mu.Unlock() // Release the lock when the function returns
 	h.clients[conn] = true
 	log.Printf("Client added. Total clients: %d", len(h.clients))
 }
@@ -74,18 +73,18 @@ func (h *Hub) removeClient(conn *websocket.Conn) {
 }
 
 func (h *Hub) broadcast(message []byte) {
-	h.mu.RLock()
+	h.mu.RLock() // Acquire a read lock (allows multiple broadcasters)
 	defer h.mu.RUnlock()
 	for client := range h.clients {
 		err := client.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			log.Printf("Error writing to client: %v", err)
-
+			// it's good practice to remove a client if we can't write to them.
+			// use goroutineto avoid deadlocking.
 			go h.removeClient(client)
 		}
 	}
 }
-
 
 // wsHandler handles incoming WebSocket connection requests
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +110,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	// ...
 }
 
+// telemetryHandler handles incoming telemetry data via HTTP POST
 func telemetryHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
@@ -118,18 +118,20 @@ func telemetryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var telemetry DroneTelemetry
-
+	// Decode the incoming JSON from the request body into our struct
 	if err := json.NewDecoder(r.Body).Decode(&telemetry); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	// Re-encode the received data to JSON to be broadcasted
+	// This ensures we're sending a clean, validated data structure
 	message, err := json.Marshal(telemetry)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	hub.broadcast(message)
 
 	w.WriteHeader(http.StatusOK)
@@ -139,9 +141,9 @@ func main() {
 	// http.HandleFunc registers our handler function for a given route.
 	// Any requests to "/ws" will be passed to wsHandler.
 	http.HandleFunc("/ws", wsHandler)
+	http.HandleFunc("/telemetry", telemetryHandler)
 
 	log.Println("🚀 Telemetry service starting on :8080")
-
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
