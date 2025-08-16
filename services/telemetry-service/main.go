@@ -31,7 +31,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Client connected from %s", conn.RemoteAddr())
 
 	defer conn.Close()
-    
+
 	// ...
 }
 
@@ -41,7 +41,7 @@ func main() {
 	http.HandleFunc("/ws", wsHandler)
 
 	log.Println("🚀 Telemetry service starting on :8080")
-	
+
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

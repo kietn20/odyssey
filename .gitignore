@@ -50,3 +50,7 @@ yarn.lock.local # local lockfile resolutions
 # --- Testing ---
 # Coverage reports
 coverage//services/telemetry-service/telemetry-service
+
+# Frontend Dependencies & Build Output
+web/dashboard/node_modules
+web/dashboard/build
