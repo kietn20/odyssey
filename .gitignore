@@ -49,4 +49,4 @@ yarn.lock.local # local lockfile resolutions
 
 # --- Testing ---
 # Coverage reports
-coverage/
+coverage//services/telemetry-service/telemetry-service
