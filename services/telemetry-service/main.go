@@ -30,7 +30,15 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Client connected from %s", conn.RemoteAddr())
 
-	defer conn.Close()
+	// defer conn.Close()
+
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("Client %s diconnected.", conn.RemoteAddr())
+			break
+		}
+	}
 
 	// ...
 }
