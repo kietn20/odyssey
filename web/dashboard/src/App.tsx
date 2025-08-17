@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import TelemetryTable from './components/TelemetryTable';
+
 
 const WEBSOCKET_URL = 'ws://localhost:8080/ws';
 
@@ -18,7 +20,7 @@ interface TelemetryData {
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
-  const [latestTelemetry, setLatestTelemetry] = useState<TelemetryData | null>(null);
+  const [telemetryData, setTelemetryData] = useState<Map<string, TelemetryData>>(new Map());
 
   useEffect(() => {
     console.log('Attempting to connect to WebSocket...');
@@ -34,19 +36,20 @@ function App() {
       setConnectionStatus('Disconnected');
     };
 
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setConnectionStatus('Error');
+    };
+
     ws.onmessage = (event) => {
       try {
         const data: TelemetryData = JSON.parse(event.data);
-        setLatestTelemetry(data);
+        setTelemetryData(prevMap => new Map(prevMap).set(data.droneId, data));
       } catch (error) {
         console.error("Failed to parse incoming message:", event.data)
       }
     }
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setConnectionStatus('Error');
-    };
 
     // React will run this function when the component is "unmounted" (removed from the screen) to prevent memory leaks.
     return () => {
@@ -61,16 +64,7 @@ function App() {
         <p>Telemetry Service Status: <strong>{connectionStatus}</strong></p>
       </header>
       <main>
-        {/* We now render the latest telemetry data if it exists. */}
-        {latestTelemetry ? (
-          <div className="telemetry-display">
-            <h2>Latest Telemetry</h2>
-            {/* The <pre> tag is great for displaying formatted code or JSON */}
-            <pre>{JSON.stringify(latestTelemetry, null, 2)}</pre>
-          </div>
-        ) : (
-          <p>Awaiting first telemetry packet...</p>
-        )}
+        <TelemetryTable drones={telemetryData} />
       </main>
     </div>
   );
