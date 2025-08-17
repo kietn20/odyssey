@@ -5,6 +5,7 @@ import uuid
 import json
 import time
 import random
+import requests
 from datetime import datetime, timezone
 
 # --- Configuration ---
@@ -15,6 +16,8 @@ STARTING_LONGITUDE = -118.243683
 
 # How often the drone sends a telemetry update, in seconds
 TELEMETRY_INTERVAL_SECONDS = 2
+
+TELEMETRY_ENDPOINT = "http://localhost:8080/telemetry"
 
 class DroneSimulator:
     """
@@ -77,15 +80,19 @@ def main():
     drone = DroneSimulator(drone_id)
 
     print(f"🚀 Starting drone simulator for drone ID: {drone.drone_id}")
+    print(f"📡 Sending telemetry to {TELEMETRY_ENDPOINT}")
     
     try:
         while True:
             drone.simulate_movement()
             telemetry = drone.get_telemetry_data()
 
-            # We use json.dumps to convert the Python dictionary to a JSON formatted string
-            print(json.dumps(telemetry, indent=2))
-            
+            try: 
+                requests.post(TELEMETRY_ENDPOINT, json=telemetry, timeout=1)
+                print(f"Sent telemetry: {telemetry['status']}, Battery: {telemetry['batteryLevel']:.3f}")
+            except requests.exceptions.RequestException as e:
+                print(f"Error sending telemetry: {e}")
+
             time.sleep(TELEMETRY_INTERVAL_SECONDS)
     except KeyboardInterrupt:
         print("\n🛑 Shutting down drone simulator.")
