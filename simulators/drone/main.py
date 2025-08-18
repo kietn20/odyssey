@@ -11,7 +11,7 @@ import time
 import random
 import requests
 from datetime import datetime, timezone
-from flask import Flask, requests, jsonify
+from flask import Flask, request, jsonify
 
 # --- Configuration ---
 # This is the starting position for our drone.
@@ -48,7 +48,8 @@ class DroneSimulator:
         to simulate a flight.
         """
 
-        with self.lock:
+        with self.lock:# Ensure we read a consistent state
+            # If returning to base, move towards the start
             if self.status == "returning_to_base":
                 lat_diff = STARTING_LATITUDE - self.latitude
                 lon_diff = STARTING_LONGITUDE - self.longitude
@@ -72,6 +73,7 @@ class DroneSimulator:
             if self.battery_level <= 0.1 and self.status != "idle":
                 self.status = "returning_to_base"
 
+            # Simulate battery drain unless idle
             if self.status != "idle":
                 self.battery_level -= 0.001
             
@@ -91,7 +93,8 @@ class DroneSimulator:
                 "batteryLevel": round(self.battery_level, 4),
                 "status": self.status,
             }
-    
+
+# --- Telemetry Loop (Worker Thread) ---
 def run_telemetry_loop(drone, stop_event):
     """This function runs in a separate thread to send telemetry."""
     while not stop_event.is_set():
@@ -104,6 +107,7 @@ def run_telemetry_loop(drone, stop_event):
             pass
         time.sleep(TELEMETRY_INTERVAL_SECONDS)
 
+# --- Command Server (Main Thread) ---
 def create_app(drone):
     """Creates the Flask web server application."""
     app = Flask(__name__)
@@ -124,6 +128,8 @@ def create_app(drone):
 
     return app
 
+
+# --- Main Execution ---
 if __name__ == "__main__":
     """
     Main function to run the simulation.
@@ -135,14 +141,16 @@ if __name__ == "__main__":
     print(f"📡 Telemetry sending to {TELEMETRY_ENDPOINT}")
     print(f"🎮 Listening for commands on http://localhost:{SIMULATOR_PORT}")
 
+    # Use a threading Event to signal shutdown
     stop_event = threading.Event()
 
+    # Start the telemetry loop in a background thread
     telemetry_thread = threading.Thread(target=run_telemetry_loop, args=(drone, stop_event))
-    telemetry_thread.daemon = True
+    telemetry_thread.daemon = True # Allows main thread to exit even if this one is running
     telemetry_thread.start()
 
+    # Start the Flask server in the main thread (it's a blocking call)
     flask_app = create_app(drone)
-    
     try:
         flask_app.run(port=SIMULATOR_PORT, debug=False)
     except KeyboardInterrupt:
