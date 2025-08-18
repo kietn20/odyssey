@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import TelemetryTable from './components/TelemetryTable';
+import FleetMap from './components/FleetMap';
 
 
 const WEBSOCKET_URL = 'ws://localhost:8080/ws';
@@ -63,8 +64,15 @@ function App() {
         <h1>Odyssey Mission Control</h1>
         <p>Telemetry Service Status: <strong>{connectionStatus}</strong></p>
       </header>
-      <main>
-        <TelemetryTable drones={telemetryData} />
+
+      {/* New main content layout */}≈
+      <main className="main-content">
+        <div className="map-container">
+          <FleetMap drones={telemetryData} />
+        </div>
+        <div className="table-container">
+          <TelemetryTable drones={telemetryData} />
+        </div>
       </main>
     </div>
   );
