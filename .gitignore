@@ -54,3 +54,7 @@ coverage//services/telemetry-service/telemetry-service
 # Frontend Dependencies & Build Output
 web/dashboard/node_modules
 web/dashboard/build
+
+
+
+/services/command-service/command-service
