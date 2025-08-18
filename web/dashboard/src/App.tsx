@@ -8,6 +8,7 @@ import FleetMap from './components/FleetMap';
 
 
 const WEBSOCKET_URL = 'ws://localhost:8080/ws';
+const COMMAND_API_URL = 'http://localhost:8081/api/command'
 
 interface TelemetryData {
   droneId: string;
@@ -58,6 +59,34 @@ function App() {
     };
   }, []);
 
+  const handleSendCommand = async (droneId: string, command: string) => {
+    console.log(`Sending command '${command}' to drone ${droneId}`);
+    try {
+      const response = await fetch(COMMAND_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // JSON.stringify converts our JavaScript object into a JSON string.
+        body: JSON.stringify({
+          droneId: droneId,
+          command: command,
+          payload: {}, // Empty for our PING command
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('C2 Service responded:', result);
+
+    } catch (error) {
+      console.error("Failed to send command:", error);
+    }
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -65,13 +94,13 @@ function App() {
         <p>Telemetry Service Status: <strong>{connectionStatus}</strong></p>
       </header>
 
-      {/* New main content layout */}≈
+      {/* New main content layout */}
       <main className="main-content">
         <div className="map-container">
           <FleetMap drones={telemetryData} />
         </div>
         <div className="table-container">
-          <TelemetryTable drones={telemetryData} />
+          <TelemetryTable drones={telemetryData} onSendCommand={handleSendCommand}/>
         </div>
       </main>
     </div>
