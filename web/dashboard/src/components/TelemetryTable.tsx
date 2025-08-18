@@ -17,9 +17,10 @@ interface TelemetryData {
 // expects a 'drones' prop, which is a Map of droneId to its telemetry data
 interface TelemetryTableProps {
     drones: Map<string, TelemetryData>;
+    onSendCommand: (droneId: string, command: string) => void;
 }
 
-const TelemetryTable: React.FC<TelemetryTableProps> = ({ drones }) => {
+const TelemetryTable: React.FC<TelemetryTableProps> = ({ drones, onSendCommand }) => {
     return (
         <table className="telemetry-table">
             <thead>
@@ -31,6 +32,7 @@ const TelemetryTable: React.FC<TelemetryTableProps> = ({ drones }) => {
                     <th>Longitude</th>
                     <th>Altitude</th>
                     <th>Last Update</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,6 +45,9 @@ const TelemetryTable: React.FC<TelemetryTableProps> = ({ drones }) => {
                         <td>{data.longitude.toFixed(6)}</td>
                         <td>{data.altitude.toFixed(1)} m</td>
                         <td>{new Date(data.timestamp).toLocaleTimeString()}</td>
+                        <td><button className="action-button" onClick={() => onSendCommand(data.droneId, 'PING')}>
+                            Ping
+                        </button></td>
                     </tr>
                 ))}
             </tbody>
