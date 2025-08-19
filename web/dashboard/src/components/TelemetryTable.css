@@ -47,3 +47,20 @@
 .action-button:hover {
     background-color: #45a049;
 }
+.action-button.ping {
+    background-color: #007BFF;
+}
+
+.action-button.ping:hover {
+    background-color: #0069d9;
+}
+
+.action-button.rtb {
+    background-color: #ffc107;
+    /* An amber color */
+    color: #212529;
+}
+
+.action-button.rtb:hover {
+    background-color: #e0a800;
+}

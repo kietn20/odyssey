@@ -45,9 +45,13 @@ const TelemetryTable: React.FC<TelemetryTableProps> = ({ drones, onSendCommand }
                         <td>{data.longitude.toFixed(6)}</td>
                         <td>{data.altitude.toFixed(1)} m</td>
                         <td>{new Date(data.timestamp).toLocaleTimeString()}</td>
-                        <td><button className="action-button" onClick={() => onSendCommand(data.droneId, 'PING')}>
+                        <td>
+                            <button className="action-button" onClick={() => onSendCommand(data.droneId, 'PING')}>
                             Ping
-                        </button></td>
+                            </button>
+                            <button className="action-button rtb" onClick={() => onSendCommand(data.droneId, 'RETURN_TO_BASE')}>
+                                Return to Base
+                            </button></td>
                     </tr>
                 ))}
             </tbody>
