@@ -114,7 +114,7 @@ def create_app(drone):
 
     @app.route('/command', methods=['POST'])
     def command():
-        data = requests.get_json()
+        data = request.get_json()
         if not data or 'command' not in data:
             return jsonify({"status": "error", "message": "Invalid command payload"}), 400 
         
@@ -134,10 +134,11 @@ if __name__ == "__main__":
     """
     Main function to run the simulation.
     """
-    drone_id = uuid.uuid4() # Generate a random unique identifier
+    drone_id = uuid.uuid4()
     drone = DroneSimulator(drone_id)
 
     print(f"🚀 Starting drone simulator for drone ID: {drone.drone_id}")
+    
     my_address = f"http://localhost:{SIMULATOR_PORT}"
     try:
         print(f"✅ Registering with C2 service at http://localhost:8081...")
@@ -148,9 +149,9 @@ if __name__ == "__main__":
         print("✅ Registration successful.")
     except requests.exceptions.RequestException as e:
         print(f"❌ Could not register with C2 service: {e}")
-
+    
     print(f"📡 Telemetry sending to {TELEMETRY_ENDPOINT}")
-    print(f"🎮 Listening for commands on http://localhost:{SIMULATOR_PORT}")
+    print(f"🎮 Listening for commands on {my_address}")
 
     # Use a threading Event to signal shutdown
     stop_event = threading.Event()

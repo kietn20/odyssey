@@ -12,17 +12,21 @@ import (
 	"time"
 )
 
+// DroneRegistry holds the network addresses of active drone simulators
+// It is a map where the key is the drone's UUID string and the value is its base URL
 type DroneRegistry struct {
 	mu sync.Mutex
 	drones map[string]string
-	client *http.Client
+	client *http.Client // use a single HTTP client for performance
 }
 
+// Global instance of our registry
 var registry = &DroneRegistry{
 	drones: make(map[string]string),
 	client: &http.Client{Timeout: 5 * time.Second},
 }
 
+// --- API Request/Response Structs ---
 type RegisterRequest struct {
 	DroneID string `json:"droneId"`
 	Address string `json:"address"`
@@ -41,6 +45,10 @@ type CommandResponse struct {
 	Command string `json:"command"`
 }
 
+
+// --- HTTP Handlers ---
+
+// registerHandler allows a drone simulator to register its address
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -48,7 +56,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	registry.mu.Lock()
+	registry.mu.Lock() // locking  for safe concurrent access
 	registry.drones[req.DroneID] = req.Address
 	registry.mu.Unlock()
 
@@ -56,7 +64,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// commandHandler processes incoming command requests.
+// commandHandler receives commands from the frontend and proxies them to the drone
 func commandHandler(w http.ResponseWriter, r *http.Request) {
 	var cmdReq CommandRequest
 	if err := json.NewDecoder(r.Body).Decode(&cmdReq); err != nil {
@@ -66,6 +74,7 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received command '%s' for drone %s", cmdReq.Command, cmdReq.DroneID)
 
+	// 1. Find the drone's address in our registry
 	registry.mu.Lock()
 	droneAddr, ok := registry.drones[cmdReq.DroneID]
 	registry.mu.Unlock()
@@ -76,6 +85,8 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
+	// 2. Forward the command to the simulator
 	droneCommandPayload, _ := json.Marshal(map[string]interface{}{
 		"command": cmdReq.Command,
 		"payload": cmdReq.Payload,
@@ -90,6 +101,8 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+
+	// 3. Send a response back to the dashboard.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(CommandResponse{Status: "Command sent to drone"})
