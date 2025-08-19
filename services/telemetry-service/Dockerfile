@@ -5,7 +5,7 @@
 # Start with the official Go image. Using a specific version like '1.22-alpine'
 # is a best practice for reproducible builds. The 'alpine' variant is a
 # lightweight Linux distribution, making our build stage smaller and faster.
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Set the working directory inside the container. All subsequent commands will run from this path
 WORKDIR /app
