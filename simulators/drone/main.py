@@ -22,6 +22,7 @@ STARTING_LONGITUDE = -118.243683
 TELEMETRY_INTERVAL_SECONDS = 2
 TELEMETRY_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "http://localhost:8080/telemetry")
 SIMULATOR_PORT = 9000
+SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "localhost") # Default to localhost for local dev
 C2_ADDRESS = os.getenv("C2_ADDRESS", "http://localhost:8081")
 
 class DroneSimulator:
@@ -141,7 +142,8 @@ if __name__ == "__main__":
 
     print(f"🚀 Starting drone simulator for drone ID: {drone.drone_id}")
     
-    my_address = f"http://localhost:{SIMULATOR_PORT}"
+    my_address = f"http://{SIMULATOR_HOST}:{SIMULATOR_PORT}"
+    
     try:
         print(f"✅ Registering with C2 service...")
         registration_url = f"{C2_ADDRESS}/api/register"
@@ -167,7 +169,7 @@ if __name__ == "__main__":
     # Start the Flask server in the main thread (it's a blocking call)
     flask_app = create_app(drone)
     try:
-        flask_app.run(port=SIMULATOR_PORT, debug=False)
+        flask_app.run(host='0.0.0.0', port=SIMULATOR_PORT, debug=False)
     except KeyboardInterrupt:
         print("\n🛑 Shutting down simulator...")
         stop_event.set()

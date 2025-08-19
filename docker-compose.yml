@@ -37,3 +37,4 @@ services:
     environment:
       - TELEMETRY_ENDPOINT=http://telemetry:8080/telemetry
       - C2_ADDRESS=http://c2:8081
+      - SIMULATOR_HOST=simulator
