@@ -138,6 +138,17 @@ if __name__ == "__main__":
     drone = DroneSimulator(drone_id)
 
     print(f"🚀 Starting drone simulator for drone ID: {drone.drone_id}")
+    my_address = f"http://localhost:{SIMULATOR_PORT}"
+    try:
+        print(f"✅ Registering with C2 service at http://localhost:8081...")
+        requests.post("http://localhost:8081/api/register", json={
+            "droneId": str(drone_id),
+            "address": my_address
+        }, timeout=2)
+        print("✅ Registration successful.")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Could not register with C2 service: {e}")
+
     print(f"📡 Telemetry sending to {TELEMETRY_ENDPOINT}")
     print(f"🎮 Listening for commands on http://localhost:{SIMULATOR_PORT}")
 
