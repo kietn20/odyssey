@@ -12,6 +12,7 @@ import random
 import requests
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
+import os
 
 # --- Configuration ---
 # This is the starting position for our drone.
@@ -19,8 +20,9 @@ from flask import Flask, request, jsonify
 STARTING_LATITUDE = 34.052235
 STARTING_LONGITUDE = -118.243683
 TELEMETRY_INTERVAL_SECONDS = 2
-TELEMETRY_ENDPOINT = "http://localhost:8080/telemetry"
+TELEMETRY_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "http://localhost:8080/telemetry")
 SIMULATOR_PORT = 9000
+C2_ADDRESS = os.getenv("C2_ADDRESS", "http://localhost:8081")
 
 class DroneSimulator:
     """
@@ -141,8 +143,9 @@ if __name__ == "__main__":
     
     my_address = f"http://localhost:{SIMULATOR_PORT}"
     try:
-        print(f"✅ Registering with C2 service at http://localhost:8081...")
-        requests.post("http://localhost:8081/api/register", json={
+        print(f"✅ Registering with C2 service...")
+        registration_url = f"{C2_ADDRESS}/api/register"
+        requests.post(registration_url, json={
             "droneId": str(drone_id),
             "address": my_address
         }, timeout=2)
