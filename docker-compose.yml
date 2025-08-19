@@ -1,0 +1,39 @@
+# File: docker-compose.yml
+# Purpose: Defines and configures the entire Odyssey application stack.
+
+version: '3.8'
+
+services:
+  # 'Telemetry Service' container definition
+  telemetry:
+    build:
+      context: ./services/telemetry-service
+    container_name: odyssey-telemetry
+    # 'ports:' maps ports from the host machine to the container (host:container).
+    # This allows us to access the service from our browser at localhost:8080.
+    ports:
+      - "8080:8080"
+
+  # 'Command & Control Service' container definition.
+  c2:
+    build:
+      context: ./services/command-service
+    container_name: odyssey-c2
+    ports:
+      - "8081:8081"
+
+  # 'Drone Simulator' container definition
+  simulator:
+    build:
+      context: ./simulators/drone
+    container_name: odyssey-simulator
+    # 'depends_on:' tells Docker Compose to start the telemetry and c2
+    # services BEFORE starting the simulator.
+    depends_on:
+      - telemetry
+      - c2
+    # The simulator can now find the other services using their service names
+    # ('telemetry' and 'c2') as hostnames.
+    environment:
+      - TELEMETRY_ENDPOINT=http://telemetry:8080/telemetry
+      - C2_ADDRESS=http://c2:8081
