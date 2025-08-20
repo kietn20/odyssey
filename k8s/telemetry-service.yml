@@ -4,11 +4,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: telemetry-service # The stable DNS name for other services to use
+  name: telemetry-service # the stable DNS name for other services to use
 spec:
+  type: NodePort # this exposes the serivce
   selector:
-    app: telemetry # Finds all Pods with this label and routes traffic to them
+    app: telemetry # finds all Pods with this label and routes traffic to them
   ports:
     - protocol: TCP
-      port: 8080 # The port the Service itself will listen on
-      targetPort: 8080 # The port on the Pods to forward traffic to
+      port: 8080 # the port the Service itself will listen on
+      targetPort: 8080 # the port on the Pods to forward traffic to
+      nodePort: 30080 # this tells Kubernetes which port to open on the host machine
