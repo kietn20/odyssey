@@ -1,0 +1,26 @@
+# File: k8s/telemetry-deployment.yml
+# Purpose: Defines the Deployment for our Telemetry Service.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-deployment # The name of this Deployment object
+spec:
+  replicas: 1 # We want one single copy (Pod) of our service running
+  selector:
+    matchLabels:
+      app: telemetry # This selector must match the labels on the Pods below
+  template: # This is the template for the Pods that will be created
+    metadata:
+      labels:
+        app: telemetry # We apply this label to our Pods
+    spec:
+      containers:
+        - name: telemetry-container # A name for the container inside the Pod
+          image: odyssey/telemetry-service:1.0.0 # The Docker image to run
+          # This tells Kubernetes that your local Docker images should be used.
+          # It's crucial for local development, as it prevents Kubernetes from
+          # trying (and failing) to download the image from the internet.
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080 # The port the application listens on inside the container

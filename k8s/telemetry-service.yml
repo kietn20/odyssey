@@ -1,0 +1,14 @@
+# File: k8s/telemetry-service.yml
+# Purpose: Exposes the Telemetry Service within the cluster.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-service # The stable DNS name for other services to use
+spec:
+  selector:
+    app: telemetry # Finds all Pods with this label and routes traffic to them
+  ports:
+    - protocol: TCP
+      port: 8080 # The port the Service itself will listen on
+      targetPort: 8080 # The port on the Pods to forward traffic to
