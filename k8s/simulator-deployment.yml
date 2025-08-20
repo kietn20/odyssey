@@ -1,0 +1,39 @@
+# File: k8s/simulator-deployment.yml
+# Purpose: Defines the Deployment for the Drone Simulator.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulator-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simulator
+  template:
+    metadata:
+      labels:
+        app: simulator
+    spec:
+      containers:
+        - name: simulator-container
+          image: odyssey/drone-simulator:1.0.0
+          imagePullPolicy: Never
+          # We use environment variables to tell the simulator how to find the
+          # other services using their Kubernetes Service names. This is the magic
+          # of Kubernetes DNS. The pod will resolve 'telemetry-service' to the
+          # correct internal cluster IP.
+          env:
+            - name: TELEMETRY_ENDPOINT
+              value: "http://telemetry-service:8080/telemetry"
+            - name: C2_ADDRESS
+              value: "http://c2-service:8081"
+            # Since each Pod gets its own IP, the simulator can register that
+            # unique IP. Kubernetes provides this through a special 'fieldRef'.
+            - name: SIMULATOR_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            # This is required to make Python logging show up in 'kubectl logs'
+            - name: PYTHONUNBUFFERED
+              value: "1"
