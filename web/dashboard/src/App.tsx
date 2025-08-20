@@ -6,8 +6,8 @@ import './App.css';
 import TelemetryTable from './components/TelemetryTable';
 import FleetMap from './components/FleetMap';
 
-
-const WEBSOCKET_URL = 'ws://localhost:8080/ws';
+// const WEBSOCKET_URL = 'ws://localhost:8080/ws';
+const WEBSOCKET_URL = 'ws://localhost:30080/ws';
 const COMMAND_API_URL = 'http://localhost:8081/api/command'
 
 interface TelemetryData {
