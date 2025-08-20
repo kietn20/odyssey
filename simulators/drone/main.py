@@ -127,7 +127,7 @@ def create_app(drone):
             return jsonify({"status":"ok", "message": "Command received: RETURN_TO_BASE"  })
         elif cmd == 'PING':
             print("COMMAND RECEIVED: PING")
-            return jsonify({"status": "ok", "message": "Unknown command"}), 400
+            return jsonify({"status": "ok", "message": "Pong!"}) 
 
     return app
 
