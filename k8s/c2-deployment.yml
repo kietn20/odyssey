@@ -1,0 +1,23 @@
+# File: k8s/c2-deployment.yml
+# Purpose: Defines the Deployment for the Command & Control Service.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: c2-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: c2 # use a unique label for this service
+  template:
+    metadata:
+      labels:
+        app: c2 # apply the unique label
+    spec:
+      containers:
+        - name: c2-container
+          image: odyssey/command-service:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081 # this service uses port 8081

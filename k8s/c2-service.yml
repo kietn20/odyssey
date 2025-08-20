@@ -1,0 +1,16 @@
+# File: k8s/c2-service.yml
+# Purpose: Exposes the C2 Service within the cluster and externally.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: c2-service
+spec:
+  type: NodePort
+  selector:
+    app: c2
+  ports:
+    - protocol: TCP
+      port: 8081       # the service's internal port
+      targetPort: 8081 # the container's port
+      nodePort: 30081  # the external port on local pc (so my mac)
