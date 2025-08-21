@@ -1,9 +1,6 @@
 # File: simulators/drone/main.py
 # Purpose: Simulates a single drone sending telemetry data.
 
-from doctest import debug
-from operator import methodcaller
-from socket import timeout
 import threading
 import uuid
 import json
@@ -144,16 +141,33 @@ if __name__ == "__main__":
     
     my_address = f"http://{SIMULATOR_HOST}:{SIMULATOR_PORT}"
     
-    try:
-        print(f"✅ Registering with C2 service...")
-        registration_url = f"{C2_ADDRESS}/api/register"
-        requests.post(registration_url, json={
-            "droneId": str(drone_id),
-            "address": my_address
-        }, timeout=2)
-        print("✅ Registration successful.")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Could not register with C2 service: {e}")
+    registration_url = f"{C2_ADDRESS}/api/register"
+    max_retries = 5
+    retry_delay = 3 # in secs
+    registered = False
+
+    for attempt in range(max_retries):
+        try:
+            print(f"✅ Attempting to register with C2 service (Attempt {attempt + 1}/{max_retries})...")            
+            response = requests.post(registration_url, json={
+                "droneId": str(drone_id),
+                "address": my_address
+            }, timeout=2)
+
+            if response.status_code == 200:
+                print("✅ Registration successful.")
+                registered = True
+                break # exit the loop on success
+
+        except requests.exceptions.RequestException as e:
+            print(f"🟡 Registration attempt failed: {e}")
+    
+        print(f"🟡 Retrying in {retry_delay} seconds...")
+        time.sleep(retry_delay)
+
+    if not registered:
+        print("❌ Could not register with C2 service after several attempts. Exiting.")
+        exit(1) # Exit the script if registration fails, this is a fatal error
     
     print(f"📡 Telemetry sending to {TELEMETRY_ENDPOINT}")
     print(f"🎮 Listening for commands on {my_address}")
