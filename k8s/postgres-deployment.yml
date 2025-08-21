@@ -1,0 +1,52 @@
+# File: k8s/postgres-deployment.yml
+# Purpose: Deploys a PostgreSQL instance using our secret and persistent volume.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres-container
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            # This is how we securely inject the password into the container
+            # We are setting an environment variable named POSTGRES_PASSWORD
+            # Its value comes from the 'POSTGRES_PASSWORD' key inside our 'postgres-secret'
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            
+            # The official PostgreSQL image also requires a username and DB name
+            - name: POSTGRES_USER
+              value: "odyssey_user"
+            - name: POSTGRES_DB
+              value: "odyssey_db"
+
+          volumeMounts:
+            # This is how we attach our persistent storage to the container
+            # We mount the 'postgres-storage' volume (defined below) inside the
+            # container at '/var/lib/postgresql/data'. This is the standard directory
+            # where PostgreSQL stores its database files.
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+
+      # 'volumes' defines the storage volumes that are available to this Pod
+      volumes:
+        - name: postgres-storage
+          # We specify that this volume is backed by our PersistentVolumeClaim
+          persistentVolumeClaim:
+            claimName: postgres-pvc
