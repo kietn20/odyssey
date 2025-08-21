@@ -1,0 +1,19 @@
+# File: k8s/postgres-pvc.yml
+# Purpose: Claims a piece of persistent storage for our PostgreSQL database.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc # A unique name for our storage claim
+spec:
+  # 'accessModes' describes how the volume can be mounted.
+  # 'ReadWriteOnce' means the volume can be mounted as read-write by a single Node.
+  # This is the standard and correct mode for a single database instance.
+  accessModes:
+    - ReadWriteOnce
+  
+  # 'resources' specifies how much storage we need.
+  # We'll start with 1 GiB, which is more than enough for our project.
+  resources:
+    requests:
+      storage: 1Gi
