@@ -58,3 +58,7 @@ web/dashboard/build
 
 
 /services/command-service/command-service
+
+
+# Ignore Kubernetes secrets
+k8s/postgres-secret.yml
