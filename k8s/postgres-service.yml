@@ -1,0 +1,21 @@
+# File: k8s/postgres-service.yml
+# Purpose: Provides a stable, internal network endpoint for the PostgreSQL database
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  # The default Service type is 'ClusterIP'. This makes the service reachable
+  # only from within the Kubernetes cluster. We do not need a NodePort
+  # as we don't want to expose our database directly to the outside world
+  type: ClusterIP
+
+  selector:
+    # this selector finds the Pods managed by our postgres-deployment
+    app: postgres
+
+  ports:
+    - protocol: TCP
+      port: 5432       # the port that this Service will "listen" on
+      targetPort: 5432 # the port on the postgres-container to forward traffic to
