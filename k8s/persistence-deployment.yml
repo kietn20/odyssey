@@ -1,0 +1,35 @@
+# File: k8s/persistence-deployment.yml
+# Purpose: Deploys the Persistence Service.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: persistence-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: persistence
+  template:
+    metadata:
+      labels:
+        app: persistence
+    spec:
+      containers:
+        - name: persistence-container
+          image: odyssey/persistence-service:1.0.
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          # Inject database credentials from our Kubernetes Secret.
+          # The Go app reads these environment variables to build its connection string.
+          env:
+            - name: POSTGRES_USER
+              value: "odyssey_user"
+            - name: POSTGRES_DB
+              value: "odyssey_db"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD

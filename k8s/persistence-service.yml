@@ -1,0 +1,15 @@
+#File: k8s/persistence-service.yml
+#Purpose: Creates a stable network endpoint for the Persistence Service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: persistence-service
+spec:
+  type: ClusterIP # Internal service so  not exposed outside the cluster
+  selector:
+    app: persistence
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
