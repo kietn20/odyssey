@@ -4,10 +4,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -45,15 +47,16 @@ type Hub struct {
 	mu sync.RWMutex
 }
 
-// NewHub creates a new Hub instance.
+// NewHub creates a new Hub instance
 func NewHub() *Hub {
 	return &Hub{
 		clients: make(map[*websocket.Conn]bool),
 	}
 }
 
-// Global instance of our hub.
+// Global instance of our hub
 var hub = NewHub()
+var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 func (h *Hub) addClient(conn *websocket.Conn) {
 	h.mu.Lock()         // Acquire a write lock
@@ -74,15 +77,36 @@ func (h *Hub) removeClient(conn *websocket.Conn) {
 
 func (h *Hub) broadcast(message []byte) {
 	h.mu.RLock() // Acquire a read lock (allows multiple broadcasters)
-	defer h.mu.RUnlock()
 	for client := range h.clients {
 		err := client.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			log.Printf("Error writing to client: %v", err)
-			// it's good practice to remove a client if we can't write to them.
-			// use goroutineto avoid deadlocking.
 			go h.removeClient(client)
 		}
+		h.mu.RUnlock()
+
+		// Part 2: Forward the message to the Persistence Service
+		// We do this in a goroutine so it doesn't block broadcasting to the UI
+		go func() {
+			// The URL uses the stable Kubernetes service name
+			req, err := http.NewRequest("POST", "http://persistence-service:8082/log", bytes.NewBuffer(message))
+			if err != nil {
+				log.Printf("Error creating request to persistence service: %v", err)
+				return
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				log.Printf("Error sending data to persistence service: %v", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusCreated {
+				log.Printf("Persistence service returned non-201 status: %d", resp.StatusCode)
+			}
+		}()
 	}
 }
 
