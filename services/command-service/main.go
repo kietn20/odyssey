@@ -5,12 +5,31 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type Waypoint struct {
+	Latitude float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type Mission struct {
+	ID        int        `json:"id"`
+	Name      string     `json:"name"`
+	Waypoints []Waypoint `json:"waypoints"`
+}
+
+// Global variable for the connection pool
+var dbpool *pgxpool.Pool
 
 // DroneRegistry holds the network addresses of active drone simulators
 // It is a map where the key is the drone's UUID string and the value is its base URL
@@ -111,6 +130,32 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var err error
+	ctx := context.Background()
+
+	// --- DATABASE CONNECTION ---
+	dbUser := os.Getenv("POSTGRES_USER")
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
+	dbName := os.Getenv("POSTGRES_DB")
+	dbHost := "postgres-service"
+	dbPort := "5432"
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	dbpool, err = pgxpool.New(ctx, connString)
+	if err != nil {
+		log.Fatalf("Unable to create connection pool: %v\n", err)
+	}
+
+	if err := dbpool.Ping(ctx); err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	log.Println("✅ Successfully connected to PostgreSQL from C2 service.")
+
+	// --- SCHEMA CREATION ---
+	createTables()
+
+
+
 	corsHandler := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*") // In production, be more specific!
@@ -132,4 +177,34 @@ func main() {
 	if err := http.ListenAndServe(":8081", corsHandler(mux)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+func createTables() {
+	// Create missions and waypoints tables. 'SERIAL PRIMARY KEY' auto-increments.
+	// 'ON DELETE CASCADE' means if a mission is deleted, all its waypoints are also deleted.
+	missionsTableSQL := `
+	CREATE TABLE IF NOT EXISTS missions (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);`
+	waypointsTableSQL := `
+	CREATE TABLE IF NOT EXISTS waypoints (
+		id SERIAL PRIMARY KEY,
+		mission_id INTEGER NOT NULL REFERENCES missions(id) ON DELETE CASCADE,
+		latitude DOUBLE PRECISION NOT NULL,
+		longitude DOUBLE PRECISION NOT NULL,
+		sequence_id INTEGER NOT NULL
+	);`
+	
+	ctx := context.Background()
+	_, err := dbpool.Exec(ctx, missionsTableSQL)
+	if err != nil {
+		log.Fatalf("Unable to create missions table: %v", err)
+	}
+	_, err = dbpool.Exec(ctx, waypointsTableSQL)
+	if err != nil {
+		log.Fatalf("Unable to create waypoints table: %v", err)
+	}
+	log.Println("✅ Missions and waypoints tables are ready.")
 }
