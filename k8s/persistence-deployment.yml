@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: persistence-container
-          image: odyssey/persistence-service:1.0.
+          image: odyssey/persistence-service:1.0.0
           imagePullPolicy: Never
           ports:
             - containerPort: 8082

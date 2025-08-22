@@ -15,6 +15,14 @@ spec:
       labels:
         app: simulator
     spec:
+      initContainers:
+        - name: wait-for-c2
+          # A tiny utility image that has network tools like 'sh' and 'nc'
+          image: busybox:1.28 
+          # This is the command the init container will run. It's a simple shell
+          # script that tries to connect to 'c2-service' on port 8081. The loop
+          # continues until the 'nc' (netcat) command succeeds.
+          command: ['sh', '-c', 'until nc -z c2-service 8081; do echo "waiting for c2-service..."; sleep 2; done;']
       containers:
         - name: simulator-container
           image: odyssey/drone-simulator:1.0.0
