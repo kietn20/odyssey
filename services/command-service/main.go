@@ -61,7 +61,7 @@ type CommandRequest struct {
 // CommandResponse defines the structure for our API's response.
 type CommandResponse struct {
 	Status  string `json:"status"`
-	Command string `json:"command"`
+	Message string `json:"message,omitempty"`
 }
 
 
@@ -129,56 +129,6 @@ func commandHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func main() {
-	var err error
-	ctx := context.Background()
-
-	// --- DATABASE CONNECTION ---
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPassword := os.Getenv("POSTGRES_PASSWORD")
-	dbName := os.Getenv("POSTGRES_DB")
-	dbHost := "postgres-service"
-	dbPort := "5432"
-	connString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
-
-	dbpool, err = pgxpool.New(ctx, connString)
-	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v\n", err)
-	}
-
-	if err := dbpool.Ping(ctx); err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
-	}
-	log.Println("✅ Successfully connected to PostgreSQL from C2 service.")
-
-	// --- SCHEMA CREATION ---
-	createTables()
-
-
-
-	corsHandler := func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*") // In production, be more specific!
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-			if r.Method == "OPTIONS" {
-				return
-			}
-			h.ServeHTTP(w, r)
-		})
-	}
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/command", commandHandler)
-	mux.HandleFunc("/api/register", registerHandler)
-
-
-	log.Println("🚀 Command & Control service starting on :8081")
-	if err := http.ListenAndServe(":8081", corsHandler(mux)); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
-}
-
 func createTables() {
 	// Create missions and waypoints tables. 'SERIAL PRIMARY KEY' auto-increments.
 	// 'ON DELETE CASCADE' means if a mission is deleted, all its waypoints are also deleted.
@@ -207,4 +157,116 @@ func createTables() {
 		log.Fatalf("Unable to create waypoints table: %v", err)
 	}
 	log.Println("✅ Missions and waypoints tables are ready.")
+}
+
+
+func missionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		handleCreateMission(w, r)
+		return
+	}
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+func handleCreateMission(w http.ResponseWriter, r *http.Request) {
+	var mission Mission
+	if err := json.NewDecoder(r.Body).Decode(&mission); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+	// Use a database transaction to ensure all or nothing is written.
+	tx, err := dbpool.Begin(ctx)
+	if err != nil {
+		http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
+		return
+	}
+	// 'defer tx.Rollback' ensures that if anything goes wrong, the transaction is cancelled.
+	defer tx.Rollback(ctx)
+
+	// Insert the mission and get its new ID
+	var missionID int
+	err = tx.QueryRow(ctx, "INSERT INTO missions (name) VALUES ($1) RETURNING id", mission.Name).Scan(&missionID)
+	if err != nil {
+		http.Error(w, "Failed to create mission", http.StatusInternalServerError)
+		return
+	}
+
+	// Insert each waypoint
+	for i, waypoint := range mission.Waypoints {
+		_, err = tx.Exec(ctx, "INSERT INTO waypoints (mission_id, latitude, longitude, sequence_id) VALUES ($1, $2, $3, $4)",
+			missionID, waypoint.Latitude, waypoint.Longitude, i,
+		)
+		if err != nil {
+			http.Error(w, "Failed to save waypoint", http.StatusInternalServerError)
+			return
+		}
+	}
+	
+	// If all inserts were successful, commit the transaction.
+	if err := tx.Commit(ctx); err != nil {
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+	
+	mission.ID = missionID
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(mission)
+	log.Printf("Created mission '%s' with ID %d and %d waypoints.", mission.Name, missionID, len(mission.Waypoints))
+}
+
+
+
+func setupCors() func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			if r.Method == "OPTIONS" { return }
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
+
+
+func main() {
+	var err error
+	ctx := context.Background()
+
+	// --- DATABASE CONNECTION ---
+	dbUser := os.Getenv("POSTGRES_USER")
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
+	dbName := os.Getenv("POSTGRES_DB")
+	dbHost := "postgres-service"
+	dbPort := "5432"
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	dbpool, err = pgxpool.New(ctx, connString)
+	if err != nil {
+		log.Fatalf("Unable to create connection pool: %v\n", err)
+	}
+
+	if err := dbpool.Ping(ctx); err != nil {
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	log.Println("✅ Successfully connected to PostgreSQL from C2 service.")
+
+	// --- SCHEMA CREATION ---
+	createTables()
+
+	// --- HTTP HANDLERS ---
+	corsHandler := setupCors()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/command", commandHandler)
+	mux.HandleFunc("/api/register", registerHandler)
+	mux.HandleFunc("/api/missions", missionsHandler) // NEW handler
+
+	log.Println("🚀 Command & Control service starting on :8081")
+	if err := http.ListenAndServe(":8081", corsHandler(mux)); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
