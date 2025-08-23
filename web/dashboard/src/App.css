@@ -55,3 +55,18 @@
   width: 100%;
   overflow: auto;
 }
+
+.bottom-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+/* On larger screens, display planner and table side-by-side */
+@media (min-width: 1200px) {
+  .bottom-panel {
+    flex-direction: row;
+  }
+}

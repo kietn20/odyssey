@@ -5,11 +5,17 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import TelemetryTable from './components/TelemetryTable';
 import FleetMap from './components/FleetMap';
+import MissionPlanner from './components/MissionPlanner';
 
 // const WEBSOCKET_URL = 'ws://localhost:8080/ws';
 const WEBSOCKET_URL = 'ws://localhost:30080/ws';
 // const COMMAND_API_URL = 'http://localhost:8081/api/command'
 const COMMAND_API_URL = 'http://localhost:30081/api/command'
+
+interface Waypoint {
+  latitude: number;
+  longitude: number;
+}
 
 interface TelemetryData {
   droneId: string;
@@ -24,6 +30,8 @@ interface TelemetryData {
 function App() {
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const [telemetryData, setTelemetryData] = useState<Map<string, TelemetryData>>(new Map());
+  const [missionName, setMissionName] = useState("");
+  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
 
   useEffect(() => {
     console.log('Attempting to connect to WebSocket...');
@@ -88,6 +96,20 @@ function App() {
     }
   };
 
+  const handleSaveMission = () => {
+    if (!missionName || waypoints.length === 0) {
+      alert("Please enter a mission name and add at least one waypoint.");
+      return;
+    }
+    console.log("Saving mission:", { name: missionName, waypoints: waypoints });
+    handleClearMission(); // after savin", clear the form
+  };
+
+  const handleClearMission = () => {
+    setMissionName("");
+    setWaypoints([]);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -95,13 +117,24 @@ function App() {
         <p>Telemetry Service Status: <strong>{connectionStatus}</strong></p>
       </header>
 
-      {/* New main content layout */}
       <main className="main-content">
         <div className="map-container">
           <FleetMap drones={telemetryData} />
         </div>
-        <div className="table-container">
-          <TelemetryTable drones={telemetryData} onSendCommand={handleSendCommand}/>
+        
+        <div className="bottom-panel">
+          <div style={{ flex: 1.2 }}>
+            <MissionPlanner
+              missionName={missionName}
+              setMissionName={setMissionName}
+              waypoints={waypoints}
+              onSaveMission={handleSaveMission}
+              onClearMission={handleClearMission}
+            />
+          </div>
+          <div className="table-container" style={{ flex: 2 }}> {/* Table gets more space */}
+            <TelemetryTable drones={telemetryData} onSendCommand={handleSendCommand} />
+          </div>
         </div>
       </main>
     </div>
