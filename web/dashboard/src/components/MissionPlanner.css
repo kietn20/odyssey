@@ -1,0 +1,60 @@
+/* File: web/dashboard/src/components/MissionPlanner.css */
+
+.mission-planner {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mission-planner h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.mission-planner-form .form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.mission-planner-form label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.mission-planner-form input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.waypoints-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.waypoints-list li {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.waypoints-list li:last-child {
+    border-bottom: none;
+}
+
+.planner-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
