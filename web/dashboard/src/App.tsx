@@ -110,6 +110,13 @@ function App() {
     setWaypoints([]);
   };
 
+  const handleMapClick = (latlng: { lat: number, lng: number }) => {
+    const newWaypoint = { latitude: latlng.lat, longitude: latlng.lng };
+    // We use the functional form of setState to ensure we are always
+    // working with the latest version of the waypoints array.
+    setWaypoints(prevWaypoints => [...prevWaypoints, newWaypoint]);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -119,7 +126,11 @@ function App() {
 
       <main className="main-content">
         <div className="map-container">
-          <FleetMap drones={telemetryData} />
+          <FleetMap
+            drones={telemetryData}
+            waypoints={waypoints}
+            onMapClick={handleMapClick}
+          />
         </div>
         
         <div className="bottom-panel">
