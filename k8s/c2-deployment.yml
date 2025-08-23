@@ -21,3 +21,13 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8081 # this service uses port 8081
+          env:
+            - name: POSTGRES_USER
+              value: "odyssey_user"
+            - name: POSTGRES_DB
+              value: "odyssey_db"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
