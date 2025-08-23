@@ -16,6 +16,11 @@
     text-align: center;
 }
 
+.mission-planner-title {
+    font-size: larger;
+    font-weight: bolder;
+}
+
 .mission-planner-form .form-group {
     display: flex;
     flex-direction: column;
@@ -28,7 +33,7 @@
 }
 
 .mission-planner-form input {
-    padding: 8px;
+    padding: 4px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;

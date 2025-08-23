@@ -26,7 +26,7 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({
 }) => {
     return (
         <div className="mission-planner">
-            <h2>Mission Planner</h2>
+            <span className='mission-planner-title'>Mission Planner</span>
             <div className="mission-planner-form">
                 <div className="form-group">
                     <label htmlFor="missionName">Mission Name</label>
