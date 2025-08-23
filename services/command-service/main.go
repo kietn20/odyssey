@@ -250,6 +250,8 @@ func main() {
 		log.Fatalf("Unable to create connection pool: %v\n", err)
 	}
 
+	defer dbpool.Close() // Ensures the pool is closed when the app exits
+
 	if err := dbpool.Ping(ctx); err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
