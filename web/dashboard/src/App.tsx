@@ -11,6 +11,7 @@ import MissionPlanner from './components/MissionPlanner';
 const WEBSOCKET_URL = 'ws://localhost:30080/ws';
 // const COMMAND_API_URL = 'http://localhost:8081/api/command'
 const COMMAND_API_URL = 'http://localhost:30081/api/command'
+const MISSIONS_API_URL = 'http://localhost:30081/api/missions';
 
 interface Waypoint {
   latitude: number;
@@ -96,13 +97,50 @@ function App() {
     }
   };
 
-  const handleSaveMission = () => {
+  const handleSaveMission = async () => {
     if (!missionName || waypoints.length === 0) {
       alert("Please enter a mission name and add at least one waypoint.");
       return;
     }
-    console.log("Saving mission:", { name: missionName, waypoints: waypoints });
-    handleClearMission(); // after savin", clear the form
+
+    console.log("Saving mission:", { name: missionName, waypoints });
+
+    try {
+      const response = await fetch(MISSIONS_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: missionName,
+          waypoints: waypoints,
+        }),
+      });
+
+      if (!response.ok) {
+        // If the server returns an error, we'll get the text and show it.
+        const errorText = await response.text();
+        throw new Error(`Failed to save mission: ${response.status} ${errorText}`);
+      }
+
+      const savedMission = await response.json();
+      console.log("Successfully saved mission:", savedMission);
+
+      // Optionally, show a success message to the user
+      alert(`Mission "${savedMission.name}" saved with ID ${savedMission.id}!`);
+
+      // Clear the form for the next mission
+      handleClearMission();
+
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error);
+        alert(`Error saving mission: ${error.message}`);
+      } else {
+        console.error("Unknown error:", error);
+        alert("An unknown error occurred while saving the mission.");
+      }
+    }
   };
 
   const handleClearMission = () => {
@@ -132,7 +170,7 @@ function App() {
             onMapClick={handleMapClick}
           />
         </div>
-        
+
         <div className="bottom-panel">
           <div style={{ flex: 1.2 }}>
             <MissionPlanner
