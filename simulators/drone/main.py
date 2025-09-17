@@ -6,18 +6,22 @@ import uuid
 import json
 import time
 import random
+import grpc
 import requests
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 import os
+from gen.python import telemetry_pb2
+from gen.python import telemetry_pb2_grpc
 
 # --- Configuration ---
 # This is the starting position for our drone.
 # (Latitude/Longitude for Los Angeles City Hall)
 STARTING_LATITUDE = 34.052235
 STARTING_LONGITUDE = -118.243683
-TELEMETRY_INTERVAL_SECONDS = 2
-TELEMETRY_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "http://localhost:8080/telemetry")
+
+TELEMETRY_GRPC_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "localhost:50051")
+
 SIMULATOR_PORT = 9000
 SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "localhost") # Default to localhost for local dev
 C2_ADDRESS = os.getenv("C2_ADDRESS", "http://localhost:8081")
@@ -94,18 +98,62 @@ class DroneSimulator:
                 "status": self.status,
             }
 
-# --- Telemetry Loop (Worker Thread) ---
-def run_telemetry_loop(drone, stop_event):
-    """This function runs in a separate thread to send telemetry."""
-    while not stop_event.is_set():
+# # --- Telemetry Loop (Worker Thread) ---
+# def run_telemetry_loop(drone, stop_event):
+#     """This function runs in a separate thread to send telemetry."""
+#     while not stop_event.is_set():
+#         drone.simulate_movement()
+#         telemetry = drone.get_telemetry_data()
+#         try:
+#             requests.post(TELEMETRY_ENDPOINT, json=telemetry, timeout=1)
+#             print(f"Sent: {telemetry['status']}, Battery: {telemetry['batteryLevel']:.3f}")
+#         except requests.exceptions.RequestException:
+#             pass
+#         time.sleep(TELEMETRY_INTERVAL_SECONDS)
+
+
+# --- gRPC Telemetry Streaming Logic ---
+def generate_telemetry(drone):
+    """A generator function that yields telemetry messages indefinitely."""
+    while True:
         drone.simulate_movement()
-        telemetry = drone.get_telemetry_data()
-        try:
-            requests.post(TELEMETRY_ENDPOINT, json=telemetry, timeout=1)
-            print(f"Sent: {telemetry['status']}, Battery: {telemetry['batteryLevel']:.3f}")
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(TELEMETRY_INTERVAL_SECONDS)
+        data = drone.get_telemetry_data()
+
+        # convert the Python dictionary to our generated Protobuf message object.
+        telemetry_message = telemetry_pb2.TelemetryData(
+            drone_id=data["droneId"],
+            timestamp=data["timestamp"],
+            latitude=data["latitude"],
+            longitude=data["longitude"],
+            altitude=data["altitude"],
+            battery_level=data["batteryLevel"],
+            status=data["status"],
+        )
+
+        yield telemetry_message
+
+        print(f"Sent (gRPC): {data['status']}, Battery: {data['batteryLevel']:.3f}")
+        time.sleep(2)
+
+def run_grpc_client(drone):
+    """
+    Connects to the gRPC server and starts the telemetry stream.
+    This function will run in a background thread.
+    """
+    print(f"📡 Attempting to connect gRPC telemetry stream to {TELEMETRY_GRPC_ENDPOINT}...")
+
+
+    with grpc.insecure_channel(TELEMETRY_GRPC_ENDPOINT) as channel:
+
+        stub = telemetry_pb2_grpc.TelemetryReporterStub(channel)
+
+
+        telemetry_generator = generate_telemetry(drone)
+
+        response = stub.ReportTelemetry(telemetry_generator)
+
+        print(f"🏁 gRPC stream finished with response: {response.success}")
+
 
 # --- Command Server (Main Thread) ---
 def create_app(drone):
@@ -169,16 +217,16 @@ if __name__ == "__main__":
         print("❌ Could not register with C2 service after several attempts. Exiting.")
         exit(1) # Exit the script if registration fails, this is a fatal error
     
-    print(f"📡 Telemetry sending to {TELEMETRY_ENDPOINT}")
+    print(f"📡 Telemetry sending to {TELEMETRY_GRPC_ENDPOINT}")
     print(f"🎮 Listening for commands on {my_address}")
 
     # Use a threading Event to signal shutdown
     stop_event = threading.Event()
 
     # Start the telemetry loop in a background thread
-    telemetry_thread = threading.Thread(target=run_telemetry_loop, args=(drone, stop_event))
-    telemetry_thread.daemon = True # Allows main thread to exit even if this one is running
-    telemetry_thread.start()
+    grpc_thread = threading.Thread(target=run_grpc_client, args=(drone,))
+    grpc_thread.daemon = True # Allows main thread to exit even if this one is running
+    grpc_thread.start()
 
     # Start the Flask server in the main thread (it's a blocking call)
     flask_app = create_app(drone)
@@ -187,4 +235,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n🛑 Shutting down simulator...")
         stop_event.set()
-        telemetry_thread.join() # Wait for telemetry thread to finish cleanly
+        grpc_thread.join() # Wait for telemetry thread to finish cleanly
