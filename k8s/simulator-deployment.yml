@@ -33,7 +33,7 @@ spec:
           # correct internal cluster IP.
           env:
             - name: TELEMETRY_ENDPOINT
-              value: "http://telemetry-service:8080/telemetry"
+              value: "telemetry-service:50051"
             - name: C2_ADDRESS
               value: "http://c2-service:8081"
             # Since each Pod gets its own IP, the simulator can register that
