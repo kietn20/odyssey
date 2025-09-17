@@ -23,4 +23,5 @@ spec:
           # trying (and failing) to download the image from the internet.
           imagePullPolicy: Never
           ports:
-            - containerPort: 8080 # The port the application listens on inside the container
+            - containerPort: 8080 # for websockets
+            - containerPort: 50051 # for gRPC
