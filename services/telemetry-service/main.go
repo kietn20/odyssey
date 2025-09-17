@@ -8,11 +8,13 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"google.golang.org/grpc"
 
 	pb "odyssey/services/telemetry-service/gen/go"
 )
@@ -217,10 +219,29 @@ func telemetryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// starting the gRPC server ---- 
+	// run this in separate goroutine so it doesnt block the http server
+	go func() {
+		// gRPC services need to listen on a TCP port. 50051 is the standard.
+		lis, err := net.Listen("tcp", ":50051")
+		if err != nil {
+			log.Fatalf("Failed to listen for gRPC: %v", err)
+		}
+
+		grpcServer := grpc.NewServer()
+		// register our custom server implementation with the gRPC server
+		pb.RegisterTelemetryReporterServer(grpcServer, &server{})
+
+		log.Println("🚀 gRPC server starting on :50051")
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+
+	}()
+
 	// http.HandleFunc registers our handler function for a given route.
 	// Any requests to "/ws" will be passed to wsHandler.
 	http.HandleFunc("/ws", wsHandler)
-	http.HandleFunc("/telemetry", telemetryHandler)
 
 	log.Println("🚀 Telemetry service starting on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
