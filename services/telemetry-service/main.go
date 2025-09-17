@@ -6,12 +6,15 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+
+	pb "odyssey/services/telemetry-service/gen/go"
 )
 
 // DroneTelemetry defines the structure of the telemetry data we expect to receive.
@@ -34,6 +37,53 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true // WARNING: In production, you'd want to validate the origin.
 	},
+}
+
+// --- gRPC Server Implementation ---
+type server struct {
+	pb.UnimplementedTelemetryReporterServer
+}
+
+// ReportTelemetry is the implementation of the RPC defined in our .proto file
+// this is a client-streaming RPC
+func (s *server) ReportTelemetry(stream pb.TelemetryReporter_ReportTelemetryServer) error {
+	log.Println("✅ gRPC stream established with a new drone.")
+	for {
+		// stream.Recv() is a blocking call so it waits for the client to send a message
+		telemetry, err := stream.Recv()
+
+		if err == io.EOF {
+			log.Println("🏁 Drone has closed the gRPC stream.")
+			// send a final response back to the client and close the connection
+			return stream.SendAndClose(&pb.ReportResponse{Success: true})
+		}
+		if err != nil {
+			log.Printf("Error receiving from gRPC stream: %v", err)
+			return err
+		}
+
+		// --- Translate from Protobuf to JSON ---
+		// dashboard needs JSON so we need to convert
+		jsonData := DroneTelemetry{
+			DroneID:      telemetry.DroneId,
+			Timestamp:    telemetry.Timestamp,
+			Latitude:     telemetry.Latitude,
+			Longitude:    telemetry.Longitude,
+			Altitude:     telemetry.Altitude,
+			BatteryLevel: telemetry.BatteryLevel,
+			Status:       telemetry.Status,
+		}
+
+		messageBytes, err := json.Marshal(jsonData)
+		if err != nil {
+			log.Printf("Error marshalling telemetry to JSON: %v", err)
+			continue // skip this message but keep the stream open
+		}
+
+		// broadcast the json message to all connected dashboards
+		hub.broadcast(messageBytes)
+
+	}
 }
 
 // Hub manages the set of active WebSocket clients.
