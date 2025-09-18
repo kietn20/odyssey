@@ -28,6 +28,9 @@ COPY . .
 # activate the virtual environment by setting the PATH
 ENV PATH="/opt/venv/bin:$PATH"
 
+# allows Python to correctly find our 'gen' package and its submodules during imports
+ENV PYTHONPATH="/app"
+
 # expose the port the Flask server listens on
 EXPOSE 9000
 
