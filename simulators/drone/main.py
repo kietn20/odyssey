@@ -11,8 +11,8 @@ import requests
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 import os
-from gen.python import telemetry_pb2
-from gen.python import telemetry_pb2_grpc
+from gen import telemetry_pb2
+from gen import telemetry_pb2_grpc
 
 # --- Configuration ---
 # This is the starting position for our drone.
@@ -230,9 +230,4 @@ if __name__ == "__main__":
 
     # Start the Flask server in the main thread (it's a blocking call)
     flask_app = create_app(drone)
-    try:
-        flask_app.run(host='0.0.0.0', port=SIMULATOR_PORT, debug=False)
-    except KeyboardInterrupt:
-        print("\n🛑 Shutting down simulator...")
-        stop_event.set()
-        grpc_thread.join() # Wait for telemetry thread to finish cleanly
+    flask_app.run(host='0.0.0.0', port=SIMULATOR_PORT, debug=False)
