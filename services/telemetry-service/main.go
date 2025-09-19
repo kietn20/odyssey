@@ -194,29 +194,29 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // telemetryHandler handles incoming telemetry data via HTTP POST
-func telemetryHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
+// func telemetryHandler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodPost {
+// 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+// 		return
+// 	}
 
-	var telemetry DroneTelemetry
+// 	var telemetry DroneTelemetry
 
-	bodyReader := http.MaxBytesReader(w, r.Body, 1_048_576) // 1MB limit
-	if err := json.NewDecoder(bodyReader).Decode(&telemetry); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	bodyReader := http.MaxBytesReader(w, r.Body, 1_048_576) // 1MB limit
+// 	if err := json.NewDecoder(bodyReader).Decode(&telemetry); err != nil {
+// 		http.Error(w, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	message, err := json.Marshal(telemetry)
-	if err != nil {
-		http.Error(w, "Failed to re-marshal telemetry", http.StatusInternalServerError)
-		return
-	}
+// 	message, err := json.Marshal(telemetry)
+// 	if err != nil {
+// 		http.Error(w, "Failed to re-marshal telemetry", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	hub.broadcast(message)
-	w.WriteHeader(http.StatusOK)
-}
+// 	hub.broadcast(message)
+// 	w.WriteHeader(http.StatusOK)
+// }
 
 func main() {
 	// starting the gRPC server ---- 
