@@ -1,0 +1,36 @@
+# File: k8s/rabbitmq-deployment.yml
+# Purpose: Deploys the RabbitMQ message broker.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq-container
+          # The management tag includes the RabbitMQ server and a helpful web UI
+          image: rabbitmq:3.11-management-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            # Port 5672 is the standard AMQP port for messaging clients
+            - name: amqp
+              containerPort: 5672
+            # Port 15672 is for the management web UI
+            - name: http-mgmt
+              containerPort: 15672
+          # Basic health check to ensure RabbitMQ is running before marking the pod as Ready.
+          livenessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "status"]
+            initialDelaySeconds: 60
+            timeoutSeconds: 15
+            periodSeconds: 30
