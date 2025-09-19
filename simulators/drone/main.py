@@ -1,5 +1,8 @@
 # File: simulators/drone/main.py
 # Purpose: Simulates a single drone sending telemetry data.
+import sys
+import os
+sys.path.append(os.path.abspath('gen'))
 
 import threading
 import uuid
@@ -10,7 +13,6 @@ import grpc
 import requests
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
-import os
 from gen import telemetry_pb2
 from gen import telemetry_pb2_grpc
 
