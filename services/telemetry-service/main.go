@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"log"
@@ -14,10 +13,16 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"golang.org/x/tools/go/analysis/passes/defers"
 	"google.golang.org/grpc"
 
 	pb "odyssey/services/telemetry-service/gen/go"
 )
+
+var amqpChannel *amqp.Channel
+
+const telemetryExchange = "telemetry_exchange"
 
 // DroneTelemetry defines the structure of the telemetry data we expect to receive.
 // The `json:"..."` tags are important. They tell Go's JSON package how to map
@@ -130,7 +135,7 @@ func (h *Hub) removeClient(conn *websocket.Conn) {
 }
 
 func (h *Hub) broadcast(message []byte) {
-	// Part 1: Broadcast to WebSocket clients (unchanged logic)
+	// Part 1: Broadcast to WebSocket clients for live ui
 	h.mu.RLock()
 	clientsSnapshot := make([]*websocket.Conn, 0, len(h.clients))
 	for client := range h.clients {
@@ -148,23 +153,18 @@ func (h *Hub) broadcast(message []byte) {
 
 	// Part 2: Forward to Persistence Service
 	go func() {
-		persistenceURL := "http://persistence-service:8082/log"
-		req, err := http.NewRequest("POST", persistenceURL, bytes.NewBuffer(message))
-		if err != nil {
-			log.Printf("Error creating request for persistence service: %v", err)
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
+		err := amqpChannel.Publish(
+			telemetryExchange,
+			"",
+			false,
+			false,
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        message,
+			})
 
-		resp, err := httpClient.Do(req)
 		if err != nil {
-			log.Printf("Error forwarding to persistence service: %v", err)
-			return
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusCreated {
-			log.Printf("Persistence service returned non-201 status: %s", resp.Status)
+			log.Printf("Failed to publish a message to RabbitMQ: %v", err)
 		}
 	}()
 }
@@ -193,33 +193,37 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	// ...
 }
 
-// telemetryHandler handles incoming telemetry data via HTTP POST
-// func telemetryHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-// 		return
-// 	}
-
-// 	var telemetry DroneTelemetry
-
-// 	bodyReader := http.MaxBytesReader(w, r.Body, 1_048_576) // 1MB limit
-// 	if err := json.NewDecoder(bodyReader).Decode(&telemetry); err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	message, err := json.Marshal(telemetry)
-// 	if err != nil {
-// 		http.Error(w, "Failed to re-marshal telemetry", http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	hub.broadcast(message)
-// 	w.WriteHeader(http.StatusOK)
-// }
-
 func main() {
-	// starting the gRPC server ---- 
+	// --- Setup RabbitMQ Connection ---
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq-service:5672/")
+	if err != nil {
+		log.Fatal("Failed to connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	amqpChannel, err = conn.Channel()
+
+	if err != nil {
+		log.Fatalf("Failed to open a channel: %v", err)
+	}
+	defer amqpChannel.Close()
+
+	err = amqpChannel.ExchangeDeclare(
+		telemetryExchange, // name
+		"fanout",          // type
+		true,              // durable
+		false,             // auto-deleted
+		false,             // internal
+		false,             // no-wait
+		nil,               // arguments
+	)
+	if err != nil {
+		log.Fatalf("Failed to declare an exchange: %v", err)
+	}
+	log.Println("✅ RabbitMQ channel and exchange configured.")
+
+
+	// starting the gRPC server ----
 	// run this in separate goroutine so it doesnt block the http server
 	go func() {
 		// gRPC services need to listen on a TCP port. 50051 is the standard.
