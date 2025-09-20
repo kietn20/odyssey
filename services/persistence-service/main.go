@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,7 +40,6 @@ func main() {
 	dbHost := "postgres-service" // This uses the stable Kubernetes Service name
 	dbPort := "5432"
 
-
 	connString := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// 2. Create the connection pool.
@@ -58,6 +56,23 @@ func main() {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	log.Println("✅ Successfully connected to PostgreSQL.")
+
+	createTableSQL := `
+	CREATE TABLE IF NOT EXISTS telemetry (
+		id SERIAL PRIMARY KEY,
+		drone_id VARCHAR(255) NOT NULL,
+		timestamp TIMESTAMPTZ NOT NULL,
+		latitude DOUBLE PRECISION NOT NULL,
+		longitude DOUBLE PRECISION NOT NULL,
+		altitude DOUBLE PRECISION NOT NULL,
+		battery_level DOUBLE PRECISION NOT NULL,
+		status VARCHAR(50) NOT NULL
+	);`
+	_, err = dbpool.Exec(ctx, createTableSQL)
+	if err != nil {
+		log.Fatalf("Unable to create telemetry table: %v", err)
+	}
+	log.Println("✅ Telemetry table is ready.")
 
 	// --- RabbitMQ Connection and Consumer Setup ---
 	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq-service:5672/")
@@ -84,6 +99,18 @@ func main() {
 		log.Fatalf("Failed to declare a queue: %v", err)
 	}
 
+	err = amqpChannel.QueueBind(
+		q.Name,               // queue name
+		"",                   // routing key (not needed for fanout)
+		"telemetry_exchange", // the name of the exchange to bind to (fixed: use string literal)
+		false,
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Failed to bind a queue: %v", err)
+	}
+	log.Println("✅ RabbitMQ channel, queue, and binding configured.")
+
 	// start consuming messages from the queue (this ia a blocking call)
 	msgs, err := amqpChannel.Consume(
 		q.Name, // queue
@@ -99,7 +126,7 @@ func main() {
 	}
 
 	log.Println("🚀 Persistence service started. Waiting for telemetry messages...")
-	
+
 	// This goroutine will run forever, processing messages as they arrive
 	go func() {
 		for d := range msgs {
@@ -140,42 +167,4 @@ func handleTelemetryLog(d amqp.Delivery) {
 	if err != nil {
 		log.Printf("Error inserting telemetry data: %v", err)
 	}
-}
-
-// telemetryLogHandler receives data and inserts it into the database
-func telemetryLogHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var telemetry DroneTelemetry
-	if err := json.NewDecoder(r.Body).Decode(&telemetry); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// the SQL INSERT statement. We use $1, $2, etc. as placeholders to prevent SQL injection vulnerabilities
-	insertSQL := `
-	INSERT INTO telemetry (drone_id, timestamp, latitude, longitude, altitude, battery_level, status)
-	VALUES ($1, $2, $3, $4, $5, $6, $7);`
-
-	// execute the command
-	_, err := dbpool.Exec(context.Background(), insertSQL,
-		telemetry.DroneID,
-		telemetry.Timestamp,
-		telemetry.Latitude,
-		telemetry.Longitude,
-		telemetry.Altitude,
-		telemetry.BatteryLevel,
-		telemetry.Status,
-	)
-
-	if err != nil {
-		log.Printf("Error inserting telemetry data: %v", err)
-		http.Error(w, "Failed to save telemetry data", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
 }
