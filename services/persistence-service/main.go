@@ -12,6 +12,8 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	amqp "github.com/rabbitmq/amqp091-go"
+
 )
 
 type DroneTelemetry struct {
@@ -56,30 +58,86 @@ func main() {
 	}
 	log.Println("✅ Successfully connected to PostgreSQL.")
 
-	// 4. Create the telemetry table if it doesn't exist.
-	// This is a simple approach for our project. In production, you would use a dedicated database migration tool.
-	createTableSQL := `
-	CREATE TABLE IF NOT EXISTS telemetry (
-		id SERIAL PRIMARY KEY,
-		drone_id VARCHAR(255) NOT NULL,
-		timestamp TIMESTAMPTZ NOT NULL,
-		latitude DOUBLE PRECISION NOT NULL,
-		longitude DOUBLE PRECISION NOT NULL,
-		altitude DOUBLE PRECISION NOT NULL,
-		battery_level DOUBLE PRECISION NOT NULL,
-		status VARCHAR(50) NOT NULL
-	);`
-	_, err = dbpool.Exec(ctx, createTableSQL)
+	// --- RabbitMQ Connection and Consumer Setup ---
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq-service:5672/")
 	if err != nil {
-		log.Fatalf("Unable to create table: %v\n", err)
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
-	log.Println("✅ Telemetry table is ready.")
+	defer conn.Close()
 
-	// 5. Set up the HTTP server and handler.
-	http.HandleFunc("/log", telemetryLogHandler)
-	log.Println("🚀 Persistence service starting on :8082")
-	if err := http.ListenAndServe(":8082", nil); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	amqpChannel, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a channel: %v", err)
+	}
+	defer amqpChannel.Close()
+
+	q, err := amqpChannel.QueueDeclare(
+		"persistence_queue", // name
+		true,                // durable
+		false,               // delete when unused
+		false,               // exclusive
+		false,               // no-wait
+		nil,                 // arguments
+	)
+	if err != nil {
+		log.Fatalf("Failed to declare a queue: %v", err)
+	}
+
+	// start consuming messages from the queue (this ia a blocking call)
+	msgs, err := amqpChannel.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	if err != nil {
+		log.Fatalf("Failed to register a consumer: %v", err)
+	}
+
+	log.Println("🚀 Persistence service started. Waiting for telemetry messages...")
+	
+	// This goroutine will run forever, processing messages as they arrive
+	go func() {
+		for d := range msgs {
+			handleTelemetryLog(d)
+		}
+	}()
+
+	// block forever until a shutdown signal is received so this keeps the main function from exiting and allows our consumer to run
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	log.Println("Shutting down persistence service.")
+}
+
+// handleTelemetryLog is our message processing function
+func handleTelemetryLog(d amqp.Delivery) {
+	var telemetry DroneTelemetry
+	if err := json.Unmarshal(d.Body, &telemetry); err != nil {
+		log.Printf("Error unmarshaling JSON: %s", err)
+		return
+	}
+
+	insertSQL := `
+	INSERT INTO telemetry (drone_id, timestamp, latitude, longitude, altitude, battery_level, status)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);`
+
+	_, err := dbpool.Exec(context.Background(), insertSQL,
+		telemetry.DroneID,
+		telemetry.Timestamp,
+		telemetry.Latitude,
+		telemetry.Longitude,
+		telemetry.Altitude,
+		telemetry.BatteryLevel,
+		telemetry.Status,
+	)
+
+	if err != nil {
+		log.Printf("Error inserting telemetry data: %v", err)
 	}
 }
 
