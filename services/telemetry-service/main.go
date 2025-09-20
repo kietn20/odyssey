@@ -14,7 +14,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"golang.org/x/tools/go/analysis/passes/defers"
 	"google.golang.org/grpc"
 
 	pb "odyssey/services/telemetry-service/gen/go"
