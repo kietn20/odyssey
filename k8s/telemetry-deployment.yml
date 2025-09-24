@@ -17,11 +17,11 @@ spec:
     spec:
       containers:
         - name: telemetry-container # A name for the container inside the Pod
-          image: odyssey/telemetry-service:1.0.0 # The Docker image to run
+          image: kietkite/odyssey/telemetry-service:1.0.0 # The Docker image to run
           # This tells Kubernetes that your local Docker images should be used.
           # It's crucial for local development, as it prevents Kubernetes from
           # trying (and failing) to download the image from the internet.
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080 # for websockets
             - containerPort: 50051 # for gRPC

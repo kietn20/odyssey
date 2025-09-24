@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: persistence-container
-          image: odyssey/persistence-service:1.0.0
-          imagePullPolicy: Never
+          image: kietkite/odyssey/persistence-service:1.0.0
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
           # Inject database credentials from our Kubernetes Secret.

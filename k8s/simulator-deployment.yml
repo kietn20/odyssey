@@ -25,8 +25,8 @@ spec:
           command: ['sh', '-c', 'until nc -z c2-service 8081; do echo "waiting for c2-service..."; sleep 2; done;']
       containers:
         - name: simulator-container
-          image: odyssey/drone-simulator:1.0.0
-          imagePullPolicy: Never
+          image: kietkite/odyssey/drone-simulator:1.0.0
+          imagePullPolicy: Always
           # We use environment variables to tell the simulator how to find the
           # other services using their Kubernetes Service names. This is the magic
           # of Kubernetes DNS. The pod will resolve 'telemetry-service' to the
