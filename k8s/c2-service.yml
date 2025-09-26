@@ -6,7 +6,7 @@ kind: Service
 metadata:
   name: c2-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: c2
   ports:

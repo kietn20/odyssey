@@ -1,0 +1,40 @@
+# File: k8s/ingress.yml
+# Purpose: Defines rules for routing external traffic to our services.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: odyssey-ingress
+  annotations:
+    # This annotation tells AWS to create an Application Load Balancer (ALB)
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # This specifies how the ALB routes traffic to our pods
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  # This is the "default" rule if no other host matches.
+  # It sends all other traffic to our web dashboard (once we deploy it).
+  # For now, we'll just define the rules for our backend services.
+  ingressClassName: alb
+  rules:
+    # You would typically point a real domain name here, e.g., api.odyssey.com
+    # For our simulation, we'll imagine we have a host.
+    # The Load Balancer will have its own DNS name we would use to test.
+    - http:
+        paths:
+          # Rule 1: Traffic for the WebSocket connection
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: telemetry-service
+                port:
+                  number: 8080 # The WebSocket port
+          
+          # Rule 2: Traffic for the Command & Control API
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: c2-service
+                port:
+                  number: 8081 # The C2 service's port

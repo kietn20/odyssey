@@ -6,7 +6,7 @@ kind: Service
 metadata:
   name: telemetry-service # the stable DNS name for other services to use
 spec:
-  type: NodePort # this exposes the serivce
+  type: ClusterIP # this exposes the serivce
   selector:
     app: telemetry # finds all Pods with this label and routes traffic to them
   ports:
