@@ -53,7 +53,7 @@ Odyssey is built on a modern, polyglot microservice architecture. The system is 
 | **Backend Services**      | Go, Python, Flask                                                                                        |
 | **Communication**         | gRPC (for high-throughput telemetry), REST API (for commands), WebSockets (for live UI updates)            |
 | **Infrastructure**        | PostgreSQL (database), RabbitMQ (message broker)                                                         |
-| **DevOps & Orchestration**| **Docker**, **Kubernetes (simulated AWS EKS)**, Docker Compose (for local dev), **GitHub Actions (CI/CD)** |
+| **DevOps & Orchestration**| **Docker**, **Kubernetes (AWS EKS)**, Docker Compose (for local dev), **GitHub Actions (CI/CD)** |
 
 ---
 
@@ -110,7 +110,7 @@ This project is configured for a full Kubernetes deployment, mirroring a product
     ```
 5.  **Access:** The `telemetry-service` and `c2-service` are exposed via `NodePort`s on `localhost:30080` and `localhost:30081` respectively.
 
-### Cloud Deployment (Simulated AWS EKS)
+### Cloud Deployment (AWS EKS)
 
 The project includes a full CI/CD pipeline defined in `.github/workflows/deploy.yml` to automate deployment to a managed Kubernetes cluster on AWS EKS.
 
