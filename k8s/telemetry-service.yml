@@ -1,21 +1,17 @@
-# File: k8s/telemetry-service.yml
-# Purpose: Exposes the Telemetry Service within the cluster.
-
 apiVersion: v1
 kind: Service
 metadata:
-  name: telemetry-service # the stable DNS name for other services to use
+  name: telemetry-service
 spec:
-  type: ClusterIP # this exposes the serivce
+  type: NodePort
   selector:
-    app: telemetry # finds all Pods with this label and routes traffic to them
+    app: telemetry
   ports:
     - name: websocket
       protocol: TCP
-      port: 8080 # the port the Service itself will listen on
-      targetPort: 8080 # the port on the Pods to forward traffic to
-      nodePort: 30080 # this tells Kubernetes which port to open on the host machine
-    
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
     - name: grpc
       protocol: TCP
       port: 50051
