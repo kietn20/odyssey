@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: c2-container
-          image: kietkite/odyssey/command-service:1.0.0
+          image: kietkite/odyssey-command-service:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8081 # this service uses port 8081
