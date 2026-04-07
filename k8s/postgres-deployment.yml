@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: postgres-container
-          image: postgres:15-alpine
+          image: kietkite/odyssey-postgres:15-alpine
           ports:
             - containerPort: 5432
           env:
