@@ -6,6 +6,17 @@ export default defineConfig({
     server: {
         port: 3000,
         strictPort: true,
+        proxy: {
+            '/ws': {
+                target: 'ws://localhost:8080',
+                ws: true,
+                changeOrigin: true,
+            },
+            '/api': {
+                target: 'http://localhost:8081',
+                changeOrigin: true,
+            },
+        },
     },
     test: {
         environment: 'jsdom',
