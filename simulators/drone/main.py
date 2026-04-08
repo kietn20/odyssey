@@ -142,19 +142,19 @@ def run_grpc_client(drone):
     Connects to the gRPC server and starts the telemetry stream.
     This function will run in a background thread.
     """
-    print(f"📡 Attempting to connect gRPC telemetry stream to {TELEMETRY_GRPC_ENDPOINT}...")
-
-
-    with grpc.insecure_channel(TELEMETRY_GRPC_ENDPOINT) as channel:
-
-        stub = telemetry_pb2_grpc.TelemetryReporterStub(channel)
-
-
-        telemetry_generator = generate_telemetry(drone)
-
-        response = stub.ReportTelemetry(telemetry_generator)
-
-        print(f"🏁 gRPC stream finished with response: {response.success}")
+    while True:
+        print(f"📡 Attempting to connect gRPC telemetry stream to {TELEMETRY_GRPC_ENDPOINT}...")
+        try:
+            with grpc.insecure_channel(TELEMETRY_GRPC_ENDPOINT) as channel:
+                stub = telemetry_pb2_grpc.TelemetryReporterStub(channel)
+                telemetry_generator = generate_telemetry(drone)
+                response = stub.ReportTelemetry(telemetry_generator)
+                print(f"🏁 gRPC stream finished with response: {response.success}")
+        except grpc.RpcError as e:
+            # Keep retrying so startup ordering issues do not permanently stop telemetry.
+            print(f"🟡 gRPC stream error: {e.code().name} - {e.details()}")
+            print("🟡 Retrying gRPC stream in 3 seconds...")
+            time.sleep(3)
 
 
 # --- Command Server (Main Thread) ---
