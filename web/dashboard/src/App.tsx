@@ -7,11 +7,9 @@ import TelemetryTable from './components/TelemetryTable';
 import FleetMap from './components/FleetMap';
 import MissionPlanner from './components/MissionPlanner';
 
-// const WEBSOCKET_URL = 'ws://localhost:8080/ws';
-const WEBSOCKET_URL = 'ws://localhost:30080/ws';
-// const COMMAND_API_URL = 'http://localhost:8081/api/command'
-const COMMAND_API_URL = 'http://localhost:30081/api/command'
-const MISSIONS_API_URL = 'http://localhost:30081/api/missions';
+const WEBSOCKET_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
+const COMMAND_API_URL = '/api/command';
+const MISSIONS_API_URL = '/api/missions';
 
 interface Waypoint {
   latitude: number;
