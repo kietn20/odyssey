@@ -1,20 +1,20 @@
 # File: simulators/drone/main.py
 # Purpose: Simulates a single drone sending telemetry data.
+from gen import telemetry_pb2_grpc
+from gen import telemetry_pb2
+from flask import Flask, request, jsonify
+from datetime import datetime, timezone
+import requests
+import grpc
+import random
+import time
+import json
+import uuid
+import threading
 import sys
 import os
 sys.path.append(os.path.abspath('gen'))
 
-import threading
-import uuid
-import json
-import time
-import random
-import grpc
-import requests
-from datetime import datetime, timezone
-from flask import Flask, request, jsonify
-from gen import telemetry_pb2
-from gen import telemetry_pb2_grpc
 
 # --- Configuration ---
 # This is the starting position for our drone.
@@ -25,14 +25,17 @@ STARTING_LONGITUDE = -118.243683
 TELEMETRY_GRPC_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "localhost:50051")
 
 SIMULATOR_PORT = 9000
-SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "localhost") # Default to localhost for local dev
+# Default to localhost for local dev
+SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "localhost")
 C2_ADDRESS = os.getenv("C2_ADDRESS", "http://localhost:8081")
+
 
 class DroneSimulator:
     """
     Represents a single drone. It maintains its state and simulates
     movement and battery drain over time.
     """
+
     def __init__(self, drone_id):
         self.drone_id = drone_id
         self.lock = threading.Lock()
@@ -54,7 +57,7 @@ class DroneSimulator:
         to simulate a flight.
         """
 
-        with self.lock:# Ensure we read a consistent state
+        with self.lock:  # Ensure we read a consistent state
             # If returning to base, move towards the start
             if self.status == "returning_to_base":
                 lat_diff = STARTING_LATITUDE - self.latitude
@@ -65,12 +68,11 @@ class DroneSimulator:
                 # If close enough, set to idle
                 if abs(lat_diff) < 0.0001 and abs(lon_diff) < 0.0001:
                     self.status = "idle"
-            
+
             elif self.status == "flying":
                 # Simulate slight random movement
                 self.latitude += random.uniform(-0.0005, 0.0005)
                 self.longitude += random.uniform(-0.0005, 0.0005)
-
 
             # Change status to flying if it has enough battery
             if self.status == "idle" and self.battery_level > 0.1:
@@ -82,7 +84,7 @@ class DroneSimulator:
             # Simulate battery drain unless idle
             if self.status != "idle":
                 self.battery_level -= 0.001
-            
+
             self.battery_level = max(0, self.battery_level)
 
     def get_telemetry_data(self):
@@ -134,8 +136,10 @@ def generate_telemetry(drone):
 
         yield telemetry_message
 
-        print(f"Sent (gRPC): {data['status']}, Battery: {data['batteryLevel']:.3f}")
+        print(
+            f"Sent (gRPC): {data['status']}, Battery: {data['batteryLevel']:.3f}")
         time.sleep(2)
+
 
 def run_grpc_client(drone):
     """
@@ -143,13 +147,15 @@ def run_grpc_client(drone):
     This function will run in a background thread.
     """
     while True:
-        print(f"📡 Attempting to connect gRPC telemetry stream to {TELEMETRY_GRPC_ENDPOINT}...")
+        print(
+            f"📡 Attempting to connect gRPC telemetry stream to {TELEMETRY_GRPC_ENDPOINT}...")
         try:
             with grpc.insecure_channel(TELEMETRY_GRPC_ENDPOINT) as channel:
                 stub = telemetry_pb2_grpc.TelemetryReporterStub(channel)
                 telemetry_generator = generate_telemetry(drone)
                 response = stub.ReportTelemetry(telemetry_generator)
-                print(f"🏁 gRPC stream finished with response: {response.success}")
+                print(
+                    f"🏁 gRPC stream finished with response: {response.success}")
         except grpc.RpcError as e:
             # Keep retrying so startup ordering issues do not permanently stop telemetry.
             print(f"🟡 gRPC stream error: {e.code().name} - {e.details()}")
@@ -166,15 +172,15 @@ def create_app(drone):
     def command():
         data = request.get_json()
         if not data or 'command' not in data:
-            return jsonify({"status": "error", "message": "Invalid command payload"}), 400 
-        
+            return jsonify({"status": "error", "message": "Invalid command payload"}), 400
+
         cmd = data['command']
         if cmd == 'RETURN_TO_BASE':
             drone.update_state_safely('returning_to_base')
-            return jsonify({"status":"ok", "message": "Command received: RETURN_TO_BASE"  })
+            return jsonify({"status": "ok", "message": "Command received: RETURN_TO_BASE"})
         elif cmd == 'PING':
             print("COMMAND RECEIVED: PING")
-            return jsonify({"status": "ok", "message": "Pong!"}) 
+            return jsonify({"status": "ok", "message": "Pong!"})
 
     return app
 
@@ -188,17 +194,18 @@ if __name__ == "__main__":
     drone = DroneSimulator(drone_id)
 
     print(f"🚀 Starting drone simulator for drone ID: {drone.drone_id}")
-    
+
     my_address = f"http://{SIMULATOR_HOST}:{SIMULATOR_PORT}"
-    
+
     registration_url = f"{C2_ADDRESS}/api/register"
     max_retries = 5
-    retry_delay = 3 # in secs
+    retry_delay = 3  # in secs
     registered = False
 
     for attempt in range(max_retries):
         try:
-            print(f"✅ Attempting to register with C2 service (Attempt {attempt + 1}/{max_retries})...")            
+            print(
+                f"✅ Attempting to register with C2 service (Attempt {attempt + 1}/{max_retries})...")
             response = requests.post(registration_url, json={
                 "droneId": str(drone_id),
                 "address": my_address
@@ -207,18 +214,18 @@ if __name__ == "__main__":
             if response.status_code == 200:
                 print("✅ Registration successful.")
                 registered = True
-                break # exit the loop on success
+                break  # exit the loop on success
 
         except requests.exceptions.RequestException as e:
             print(f"🟡 Registration attempt failed: {e}")
-    
+
         print(f"🟡 Retrying in {retry_delay} seconds...")
         time.sleep(retry_delay)
 
     if not registered:
         print("❌ Could not register with C2 service after several attempts. Exiting.")
-        exit(1) # Exit the script if registration fails, this is a fatal error
-    
+        exit(1)  # Exit the script if registration fails, this is a fatal error
+
     print(f"📡 Telemetry sending to {TELEMETRY_GRPC_ENDPOINT}")
     print(f"🎮 Listening for commands on {my_address}")
 
@@ -227,7 +234,7 @@ if __name__ == "__main__":
 
     # Start the telemetry loop in a background thread
     grpc_thread = threading.Thread(target=run_grpc_client, args=(drone,))
-    grpc_thread.daemon = True # Allows main thread to exit even if this one is running
+    grpc_thread.daemon = True  # Allows main thread to exit even if this one is running
     grpc_thread.start()
 
     # Start the Flask server in the main thread (it's a blocking call)
