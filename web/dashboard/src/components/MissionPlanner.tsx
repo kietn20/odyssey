@@ -26,20 +26,35 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({
 }) => {
     return (
         <div className="mission-planner">
-            <span className='mission-planner-title'>Mission Planner</span>
+            <div className="mission-details-header">
+                <span className="mission-title">MISSION DETAILS</span>
+            </div>
+            <div className="mission-details-row">
+                <span className="detail-label">Name:</span>
+                <input
+                    className="detail-input"
+                    id="missionName"
+                    type="text"
+                    value={missionName}
+                    onChange={(e) => setMissionName(e.target.value)}
+                    placeholder="Enter name..."
+                />
+            </div>
+            <div className="mission-details-row">
+                <span className="detail-label">Created:</span>
+                <span className="detail-value">12:48 PM</span>
+            </div>
+            <div className="mission-details-row">
+                <span className="detail-label">Author:</span>
+                <span className="detail-value">[user]</span>
+            </div>
+            
+            <div className="mission-details-header" style={{ marginTop: 20 }}>
+                <span className="mission-title">ACTIVE ROUTE POINTS</span>
+            </div>
             <div className="mission-planner-form">
                 <div className="form-group">
-                    <label htmlFor="missionName">Mission Name</label>
-                    <input
-                        id="missionName"
-                        type="text"
-                        value={missionName}
-                        onChange={(e) => setMissionName(e.target.value)}
-                        placeholder="e.g., Perimeter Scan Alpha"
-                    />
-                </div>
-                <div className="form-group">
-                    <label>Waypoints ({waypoints.length})</label>
+                    <label style={{ fontSize: '0.8rem', color: '#aaa' }}>Waypoints ({waypoints.length})</label>
                     <ol className="waypoints-list">
                         {waypoints.length > 0 ? (
                             waypoints.map((wp, index) => (
@@ -48,17 +63,9 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({
                                 </li>
                             ))
                         ) : (
-                            <li>Click on the map to add waypoints...</li>
+                            <li style={{ color: '#888' }}>Click on the map to add waypoints...</li>
                         )}
                     </ol>
-                </div>
-                <div className="planner-buttons">
-                    <button className="action-button rtb" onClick={onClearMission}>
-                        Clear
-                    </button>
-                    <button className="action-button" onClick={onSaveMission}>
-                        Save Mission
-                    </button>
                 </div>
             </div>
         </div>
