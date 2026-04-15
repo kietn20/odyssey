@@ -160,43 +160,114 @@ function App() {
 
 	return (
 		<div className="App">
-			<header className="App-header">
-				<h1>Odyssey Mission Control</h1>
-				<p>
-					Telemetry Service Status:{" "}
-					<strong>{connectionStatus}</strong>
-				</p>
-			</header>
+			<div className="header-bar">
+				<div className="logo" style={{ color: "#ff8c00", fontWeight: "bold", fontSize: "1.2rem" }}>
+					<span style={{ marginRight: 8 }}>🚀</span>ODYSSEY
+				</div>
+				<div className="search-bar" style={{ background: "#333", padding: "4px 12px", borderRadius: 4, width: "300px" }}>
+					<input type="text" placeholder="search" style={{ background: "transparent", border: "none", color: "white", width: "100%", outline: "none" }} />
+				</div>
+				<div className="global-vitals" style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+					<span>🌬️ 7 m/s</span>
+					<span>📏 243.4 ha</span>
+					<span>🌡️ 36°C</span>
+					<span>🕒 14:20 PM</span>
+					<div className="avatar" style={{ width: 30, height: 30, background: "#555", borderRadius: "50%" }}></div>
+				</div>
+			</div>
 
-			<main className="main-content">
-				<div className="map-container">
-					<FleetMap
-						drones={telemetryData}
-						waypoints={waypoints}
-						onMapClick={handleMapClick}
-					/>
+			<div className="top-panel" style={{ display: "flex" }}>
+				{/* Active Assets */}
+				<div className="panel-module" style={{ border: "1px solid #444", padding: 10, borderRadius: 4, minWidth: 200 }}>
+					<div style={{ fontSize: "0.8rem", color: "#aaa" }}>Active Assets</div>
+					<div style={{ marginTop: 8, padding: 8, background: "#333", borderRadius: 4 }}>ODYSSEY - 1</div>
 				</div>
 
-				<div className="bottom-panel">
-					<div style={{ flex: 1.2 }}>
-						<MissionPlanner
-							missionName={missionName}
-							setMissionName={setMissionName}
-							waypoints={waypoints}
-							onSaveMission={handleSaveMission}
-							onClearMission={handleClearMission}
-						/>
-					</div>
-					<div className="table-container" style={{ flex: 2 }}>
-						{" "}
-						{/* Table gets more space */}
-						<TelemetryTable
-							drones={telemetryData}
-							onSendCommand={handleSendCommand}
-						/>
+				{/* Mission Monitor */}
+				<div className="panel-module" style={{ border: "1px solid #444", padding: 10, borderRadius: 4, flex: 1 }}>
+					<div style={{ fontSize: "0.8rem", color: "#aaa" }}>MISSION MONITOR</div>
+					<div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+						<div>ODYSSEY - 1 <span style={{ color: "#4CAF50" }}>ACTIVE</span></div>
+						<div style={{ display: "flex", gap: 15 }}>
+							<div style={{ textAlign: "center" }}><div>00:00</div><div style={{ fontSize: "0.7rem", color: "#888" }}>START</div></div>
+							<div style={{ textAlign: "center" }}><div>03:30</div><div style={{ fontSize: "0.7rem", color: "#888" }}>ELAPSED</div></div>
+							<div style={{ textAlign: "center" }}><div>00:00</div><div style={{ fontSize: "0.7rem", color: "#888" }}>END</div></div>
+						</div>
 					</div>
 				</div>
-			</main>
+
+				{/* Active Mission Plan */}
+				<div className="panel-module" style={{ border: "1px solid #444", padding: 10, borderRadius: 4, flex: 1 }}>
+					<div style={{ fontSize: "0.8rem", color: "#aaa" }}>ACTIVE MISSION PLAN</div>
+					<div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 10 }}>
+						<div style={{ display: "flex", alignItems: "center", gap: 10 }}>Mode: <button style={{ background: "#444", border: "none", color: "white", padding: "4px 8px" }}>Manual</button><button style={{ background: "#222", border: "1px solid #444", color: "white", padding: "4px 8px" }}>Auto</button></div>
+						<div style={{ display: "flex", alignItems: "center", gap: 10 }}>Lens: <button style={{ background: "#444", border: "none", color: "white", padding: "4px 8px" }}>Precision</button><button style={{ background: "#222", border: "1px solid #444", color: "white", padding: "4px 8px" }}>Wide</button></div>
+					</div>
+				</div>
+
+				{/* Live Geospatial Data */}
+				<div className="panel-module" style={{ border: "1px solid #444", padding: 10, borderRadius: 4, flex: 1 }}>
+					<div style={{ fontSize: "0.8rem", color: "#aaa" }}>LIVE GEOSPATIAL DATA</div>
+					<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+						<div>Altitude: 100.0 m</div><div>12:50:50 PM</div>
+						<div>Latitude: 34.05 N</div>
+						<div>Longitude: 118.24 W</div>
+					</div>
+				</div>
+
+				{/* Fleet Actions */}
+				<div className="panel-module" style={{ border: "1px solid #444", padding: 10, borderRadius: 4, minWidth: 200 }}>
+					<div style={{ fontSize: "0.8rem", color: "#aaa" }}>FLEET ACTIONS</div>
+					<div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+						<div style={{ display: "flex", justifyContent: "space-between" }}>
+							Ping <button style={{ background: "transparent", border: "1px solid #4CAF50", color: "#4CAF50", padding: "2px 10px", borderRadius: 4 }}>Ping</button>
+						</div>
+						<button style={{ background: "#444", border: "none", color: "white", padding: "8px", borderRadius: 4, width: "100%" }}>Return to Base</button>
+					</div>
+				</div>
+
+				{/* Drone Mock View */}
+				<div className="panel-module" style={{ border: "1px solid #444", padding: 10, borderRadius: 4, minWidth: 200, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+					<div style={{ textAlign: "center", background: "#333", height: 60, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>Drone img</div>
+					<div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: "0.8rem", color: "#aaa" }}>
+						<span>🔋 4364 / 4666 mAh</span>
+						<span>🌡️ 0°C</span>
+					</div>
+				</div>
+			</div>
+
+			<div className="main-viewport">
+				<FleetMap
+					drones={telemetryData}
+					waypoints={waypoints}
+					onMapClick={handleMapClick}
+				/>
+			</div>
+
+			<div className="right-drawer">
+				<div className="drawer-tabs" style={{ display: "flex", justifyContent: "space-around", paddingBottom: 10, borderBottom: "1px solid #444", marginBottom: 20 }}>
+					<span>Layers</span><span>Users</span><span>Plans</span><span>Settings</span>
+				</div>
+				<div className="mission-list" style={{ marginBottom: 20 }}>
+					<div style={{ background: "#333", padding: 10, borderRadius: 4, marginBottom: 8, borderLeft: "4px solid #ff8c00" }}>Mission 1</div>
+					<div style={{ padding: 10, color: "#888" }}>Mission 2 (idle)</div>
+				</div>
+				<MissionPlanner
+					missionName={missionName}
+					setMissionName={setMissionName}
+					waypoints={waypoints}
+					onSaveMission={handleSaveMission}
+					onClearMission={handleClearMission}
+				/>
+				<div className="minimap" style={{ background: "#333", height: 150, borderRadius: 4, marginTop: 20, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
+					Map Thumbnail
+				</div>
+				<div className="event-logs" style={{ fontSize: "0.8rem" }}>
+					<div style={{ color: "#aaa", marginBottom: 8, fontWeight: "bold" }}>EVENTS</div>
+					<div style={{ padding: 4 }}>Enter Geofence [12:45]</div>
+					<div style={{ padding: 4 }}>Waypoint Reached [12:46]</div>
+				</div>
+			</div>
 		</div>
 	);
 }
