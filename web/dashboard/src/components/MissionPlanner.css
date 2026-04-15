@@ -1,63 +1,63 @@
 /* File: web/dashboard/src/components/MissionPlanner.css */
 
 .mission-planner {
-    background-color: transparent;
-    color: #e0e0e0;
-    font-size: 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+	background-color: transparent;
+	color: #e0e0e0;
+	font-size: 0.9rem;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .mission-details-header {
-    border-bottom: 1px solid #444;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
+	border-bottom: 1px solid #444;
+	padding-bottom: 5px;
+	margin-bottom: 10px;
 }
 
 .mission-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #aaa;
-    text-transform: uppercase;
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: #aaa;
+	text-transform: uppercase;
 }
 
 .mission-details-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 5px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 5px;
 }
 
 .detail-label {
-    width: 60px;
-    color: #888;
+	width: 60px;
+	color: #888;
 }
 
 .detail-value {
-    color: #fff;
+	color: #fff;
 }
 
 .detail-input {
-    background: #333;
-    border: 1px solid #444;
-    color: #fff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    flex: 1;
-    font-size: 0.85rem;
+	background: #333;
+	border: 1px solid #444;
+	color: #fff;
+	padding: 4px 8px;
+	border-radius: 4px;
+	flex: 1;
+	font-size: 0.85rem;
 }
 
 .detail-input:focus {
-    outline: none;
-    border-color: #ff8c00;
+	outline: none;
+	border-color: #ff8c00;
 }
 
 .waypoints-list {
-    margin: 5px 0 0 0;
-    padding-left: 20px;
-    color: #ccc;
-    font-size: 0.8rem;
-    max-height: 150px;
-    overflow-y: auto;
+	margin: 5px 0 0 0;
+	padding-left: 20px;
+	color: #ccc;
+	font-size: 0.8rem;
+	max-height: 150px;
+	overflow-y: auto;
 }
