@@ -265,7 +265,10 @@ function App() {
 						}}
 					>
 						<div>
-							{activeDrone ? activeDrone.droneId : "ODYSSEY"} <span style={{ color: "#4CAF50" }}>{activeDrone ? activeDrone.status : "IDLE"}</span>
+							{activeDrone ? activeDrone.droneId : "ODYSSEY"}{" "}
+							<span style={{ color: "#4CAF50" }}>
+								{activeDrone ? activeDrone.status : "IDLE"}
+							</span>
 						</div>
 						<div style={{ display: "flex", gap: 15 }}>
 							<div style={{ textAlign: "center" }}>
@@ -408,10 +411,32 @@ function App() {
 							marginTop: 8,
 						}}
 					>
-						<div>Altitude: {activeDrone ? activeDrone.altitude.toFixed(1) : "0.0"} m</div>
-						<div>{activeDrone ? new Date(activeDrone.timestamp).toLocaleTimeString() : "--:--:--"}</div>
-						<div>Latitude: {activeDrone ? activeDrone.latitude.toFixed(4) : "0.0"}</div>
-						<div>Longitude: {activeDrone ? activeDrone.longitude.toFixed(4) : "0.0"}</div>
+						<div>
+							Altitude:{" "}
+							{activeDrone
+								? activeDrone.altitude.toFixed(1)
+								: "0.0"}{" "}
+							m
+						</div>
+						<div>
+							{activeDrone
+								? new Date(
+										activeDrone.timestamp,
+									).toLocaleTimeString()
+								: "--:--:--"}
+						</div>
+						<div>
+							Latitude:{" "}
+							{activeDrone
+								? activeDrone.latitude.toFixed(4)
+								: "0.0"}
+						</div>
+						<div>
+							Longitude:{" "}
+							{activeDrone
+								? activeDrone.longitude.toFixed(4)
+								: "0.0"}
+						</div>
 					</div>
 				</div>
 
@@ -440,26 +465,35 @@ function App() {
 							style={{
 								display: "flex",
 								justifyContent: "space-between",
-								alignItems: "center"
+								alignItems: "center",
 							}}
 						>
 							Ping{" "}
 							<button
-								onClick={() => activeDrone && handleSendCommand(activeDrone.droneId, "PING")}
+								onClick={() =>
+									activeDrone &&
+									handleSendCommand(
+										activeDrone.droneId,
+										"PING",
+									)
+								}
 								style={{
 									background: "transparent",
 									border: "1px solid #4CAF50",
 									color: "#4CAF50",
 									padding: "4px 10px",
 									borderRadius: 4,
-									cursor: "pointer"
+									cursor: "pointer",
 								}}
 							>
 								Ping
 							</button>
 						</div>
 						<button
-							onClick={() => activeDrone && handleSendCommand(activeDrone.droneId, "RTL")}
+							onClick={() =>
+								activeDrone &&
+								handleSendCommand(activeDrone.droneId, "RTL")
+							}
 							style={{
 								background: "#444",
 								border: "none",
@@ -467,7 +501,7 @@ function App() {
 								padding: "8px",
 								borderRadius: 4,
 								width: "100%",
-								cursor: "pointer"
+								cursor: "pointer",
 							}}
 						>
 							Return to Base
@@ -510,7 +544,13 @@ function App() {
 							color: "#aaa",
 						}}
 					>
-						<span>🔋 {activeDrone?.batteryLevel ? activeDrone.batteryLevel.toFixed(1) : "4364"} / 4666 mAh</span>
+						<span>
+							🔋{" "}
+							{activeDrone?.batteryLevel
+								? activeDrone.batteryLevel.toFixed(1)
+								: "4364"}{" "}
+							/ 4666 mAh
+						</span>
 						<span>🌡️ 0°C</span>
 					</div>
 				</div>
