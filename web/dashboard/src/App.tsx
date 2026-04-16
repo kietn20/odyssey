@@ -158,6 +158,8 @@ function App() {
 		setWaypoints((prevWaypoints) => [...prevWaypoints, newWaypoint]);
 	};
 
+	const activeDrone = Array.from(telemetryData.values())[0];
+
 	return (
 		<div className="App">
 			<div className="header-bar">
@@ -238,7 +240,7 @@ function App() {
 							borderRadius: 4,
 						}}
 					>
-						ODYSSEY - 1
+						{activeDrone ? activeDrone.droneId : "No Active Asset"}
 					</div>
 				</div>
 
@@ -263,8 +265,7 @@ function App() {
 						}}
 					>
 						<div>
-							ODYSSEY - 1{" "}
-							<span style={{ color: "#4CAF50" }}>ACTIVE</span>
+							{activeDrone ? activeDrone.droneId : "ODYSSEY"} <span style={{ color: "#4CAF50" }}>{activeDrone ? activeDrone.status : "IDLE"}</span>
 						</div>
 						<div style={{ display: "flex", gap: 15 }}>
 							<div style={{ textAlign: "center" }}>
@@ -407,10 +408,10 @@ function App() {
 							marginTop: 8,
 						}}
 					>
-						<div>Altitude: 100.0 m</div>
-						<div>12:50:50 PM</div>
-						<div>Latitude: 34.05 N</div>
-						<div>Longitude: 118.24 W</div>
+						<div>Altitude: {activeDrone ? activeDrone.altitude.toFixed(1) : "0.0"} m</div>
+						<div>{activeDrone ? new Date(activeDrone.timestamp).toLocaleTimeString() : "--:--:--"}</div>
+						<div>Latitude: {activeDrone ? activeDrone.latitude.toFixed(4) : "0.0"}</div>
+						<div>Longitude: {activeDrone ? activeDrone.longitude.toFixed(4) : "0.0"}</div>
 					</div>
 				</div>
 
@@ -439,22 +440,26 @@ function App() {
 							style={{
 								display: "flex",
 								justifyContent: "space-between",
+								alignItems: "center"
 							}}
 						>
 							Ping{" "}
 							<button
+								onClick={() => activeDrone && handleSendCommand(activeDrone.droneId, "PING")}
 								style={{
 									background: "transparent",
 									border: "1px solid #4CAF50",
 									color: "#4CAF50",
-									padding: "2px 10px",
+									padding: "4px 10px",
 									borderRadius: 4,
+									cursor: "pointer"
 								}}
 							>
 								Ping
 							</button>
 						</div>
 						<button
+							onClick={() => activeDrone && handleSendCommand(activeDrone.droneId, "RTL")}
 							style={{
 								background: "#444",
 								border: "none",
@@ -462,6 +467,7 @@ function App() {
 								padding: "8px",
 								borderRadius: 4,
 								width: "100%",
+								cursor: "pointer"
 							}}
 						>
 							Return to Base
@@ -504,7 +510,7 @@ function App() {
 							color: "#aaa",
 						}}
 					>
-						<span>🔋 4364 / 4666 mAh</span>
+						<span>🔋 {activeDrone?.batteryLevel ? activeDrone.batteryLevel.toFixed(1) : "4364"} / 4666 mAh</span>
 						<span>🌡️ 0°C</span>
 					</div>
 				</div>
@@ -515,6 +521,8 @@ function App() {
 					drones={telemetryData}
 					waypoints={waypoints}
 					onMapClick={handleMapClick}
+					onClearMission={handleClearMission}
+					onSaveMission={handleSaveMission}
 				/>
 			</div>
 
